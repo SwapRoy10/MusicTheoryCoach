@@ -1,0 +1,47 @@
+{
+  "instructions": "Keep the soprano and whole-note rhythm. End on tonic.",
+  "preserve_soprano": true,
+  "require_tonic_ending": true,
+  "harmony": [
+    {
+      "measure": "1",
+      "beat": 1,
+      "pitches": [
+        "C",
+        "E",
+        "G"
+      ],
+      "bass": "C"
+    },
+    {
+      "measure": "2",
+      "beat": 1,
+      "pitches": [
+        "F",
+        "A",
+        "C"
+      ],
+      "bass": "F"
+    },
+    {
+      "measure": "3",
+      "beat": 1,
+      "pitches": [
+        "C",
+        "E",
+        "G"
+      ],
+      "bass": "C"
+    },
+    {
+      "measure": "4",
+      "beat": 1,
+      "pitches": [
+        "C",
+        "E",
+        "G"
+      ],
+      "bass": "C"
+    }
+  ]
+}

@@ -1,0 +1,1092 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "voice-leading-extended",
+      "title": "Voice Leading Rules Summary - Extended",
+      "provided_by": "user",
+      "imported_on": "2026-10-13",
+      "pdf": "references/voice-leading-extended/source.pdf",
+      "sha256": "b7562cfc6e76e699d4aca2fe837723c3be64a4747166d0e9433c0026add90fc3",
+      "pdf_pages": 5,
+      "printed_pages": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "sections": [
+        "F. Contrapuntal Expansions Summary",
+        "G. General Considerations"
+      ],
+      "author": "not identified in supplied excerpt",
+      "usage_rights": "not specified; user project reference",
+      "extraction_note": "Most notation is image-based; original diagrams and page images are retained.",
+      "scope_note": "Major/minor, chromatic, pedal and incomplete-chord examples exceed current checker support."
+    }
+  ],
+  "patterns": [
+    {
+      "id": "pattern-01",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "1",
+      "family": "arpeggiated bass",
+      "name": "Authentic arpeggiation",
+      "progression": [
+        "I",
+        "V",
+        "I"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-02",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "2",
+      "family": "arpeggiated bass",
+      "name": "Plagal arpeggiation",
+      "progression": [
+        "I",
+        "IV",
+        "I"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-03",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "3",
+      "family": "arpeggiated bass",
+      "name": "Plagal with IV6",
+      "progression": [
+        "I",
+        "IV6",
+        "I"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-04",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "4",
+      "family": "arpeggiated bass",
+      "name": "10-long",
+      "progression": [
+        "I",
+        "IV6",
+        "I6"
+      ],
+      "required_soprano_degrees": [
+        3,
+        4,
+        5
+      ],
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-05",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "5",
+      "family": "neighbor bass",
+      "name": "Lower neighbor with V6/5",
+      "progression": [
+        "I",
+        "V6/5",
+        "I"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-06",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "6",
+      "family": "neighbor bass",
+      "name": "Upper neighbor with V4/3",
+      "progression": [
+        "I",
+        "V4/3",
+        "I"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-07",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "7",
+      "family": "neighbor bass",
+      "name": "Lower neighbor with V4/3",
+      "progression": [
+        "I6",
+        "V4/3",
+        "I6"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-08",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "8",
+      "family": "neighbor bass",
+      "name": "Upper neighbor with V4/2",
+      "progression": [
+        "I6",
+        "V4/2",
+        "I6"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-09",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "9a",
+      "family": "passing bass",
+      "name": "Voice exchange descending soprano",
+      "progression": [
+        "I",
+        "vii°6",
+        "I6"
+      ],
+      "required_soprano_degrees": [
+        3,
+        2,
+        1
+      ],
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-10",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "9b",
+      "family": "passing bass",
+      "name": "Voice exchange ascending soprano",
+      "progression": [
+        "I6",
+        "vii°6",
+        "I"
+      ],
+      "required_soprano_degrees": [
+        1,
+        2,
+        3
+      ],
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-11",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "10",
+      "family": "passing bass",
+      "name": "Parallel 10ths",
+      "progression": [
+        "I",
+        "V4/3",
+        "I6"
+      ],
+      "required_soprano_degrees": [
+        3,
+        4,
+        5
+      ],
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-12",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "11",
+      "family": "passing bass",
+      "name": "Arpeggiation plus stepwise",
+      "progression": [],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-13",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "12a",
+      "family": "incomplete neighbor bass",
+      "name": "Voice exchange with skips ascending bass",
+      "progression": [
+        "I",
+        "V4/2",
+        "I6"
+      ],
+      "required_soprano_degrees": [
+        3,
+        1,
+        1
+      ],
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-14",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "12b",
+      "family": "incomplete neighbor bass",
+      "name": "Voice exchange with skips descending bass",
+      "progression": [
+        "I6",
+        "V6/5",
+        "I"
+      ],
+      "required_soprano_degrees": [
+        1,
+        3,
+        3
+      ],
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-15",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "12c",
+      "family": "incomplete neighbor bass",
+      "name": "Both voice exchanges with skips",
+      "progression": [
+        "I",
+        "V4/2",
+        "I6",
+        "V6/5",
+        "I"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-1.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-16",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "5b",
+      "family": "alternate neighbor bass",
+      "name": "Lower neighbor with vii°7 in minor",
+      "progression": [
+        "i",
+        "vii°7",
+        "i"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-17",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "7b",
+      "family": "alternate neighbor bass",
+      "name": "Lower neighbor with vii°6/5 in minor",
+      "progression": [
+        "i6",
+        "vii°6/5",
+        "i6"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-18",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "8b",
+      "family": "alternate neighbor bass",
+      "name": "Upper neighbor with vii°4/3 in minor",
+      "progression": [
+        "i6",
+        "vii°4/3",
+        "i6"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-19",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "8c",
+      "family": "alternate neighbor bass",
+      "name": "Upper neighbor with IV",
+      "progression": [
+        "I6",
+        "IV",
+        "I6"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-20",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "13",
+      "family": "double neighbor bass",
+      "name": "Using V4/3 and V6/5; order can reverse",
+      "progression": [
+        "I",
+        "V4/3",
+        "V6/5",
+        "I"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-21",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "9a",
+      "family": "alternate passing bass",
+      "name": "Voice exchange with V6/4 descending soprano",
+      "progression": [
+        "I",
+        "V6/4",
+        "I6"
+      ],
+      "required_soprano_degrees": [
+        3,
+        2,
+        1
+      ],
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-22",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "9b",
+      "family": "alternate passing bass",
+      "name": "Voice exchange with V6/4 ascending soprano",
+      "progression": [
+        "I6",
+        "V6/4",
+        "I"
+      ],
+      "required_soprano_degrees": [
+        1,
+        2,
+        3
+      ],
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-23",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "14",
+      "family": "predominant prolongation",
+      "name": "Passing voice exchange with I6/4",
+      "progression": [
+        "IV",
+        "I6/4",
+        "IV6"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-24",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "15a",
+      "family": "predominant prolongation",
+      "name": "Passing voice exchange with I6 from ii7",
+      "progression": [
+        "ii7",
+        "I6",
+        "ii6/5"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-25",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "15b",
+      "family": "predominant prolongation",
+      "name": "Passing voice exchange with I6 from ii6/5",
+      "progression": [
+        "ii6/5",
+        "I6",
+        "ii7"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-26",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "16",
+      "family": "predominant prolongation",
+      "name": "Passing from IV to ii6/5; outer sixths",
+      "progression": [
+        "IV6",
+        "I6",
+        "ii6/5"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-27",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "17",
+      "family": "dominant prolongation",
+      "name": "Passing voice exchange with i6/4 in minor",
+      "progression": [
+        "V6/5",
+        "i6/4",
+        "V4/3"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-28",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 2,
+      "printed_page": 13,
+      "figure": "18",
+      "family": "dominant prolongation",
+      "name": "Voice exchange unfolding vii°7 with inversions of i",
+      "progression": [],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-2.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-29",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "1",
+      "family": "embedded phrase models EPM",
+      "name": "BACH",
+      "progression": [
+        "I",
+        "ii4/2",
+        "V6/5",
+        "I"
+      ],
+      "required_soprano_degrees": [
+        3,
+        4,
+        4,
+        3
+      ],
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-30",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "2",
+      "family": "embedded phrase models EPM",
+      "name": "Bass ascent",
+      "progression": [
+        "I",
+        "IV6",
+        "V6/5",
+        "I"
+      ],
+      "required_soprano_degrees": [
+        3,
+        4,
+        4,
+        3
+      ],
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-31",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "3",
+      "family": "embedded phrase models EPM",
+      "name": "Soprano ascent 1",
+      "progression": [
+        "I",
+        "IV",
+        "V4/2",
+        "I6"
+      ],
+      "required_soprano_degrees": [
+        5,
+        6,
+        7,
+        1
+      ],
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-32",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "4",
+      "family": "embedded phrase models EPM",
+      "name": "Soprano ascent 2",
+      "progression": [
+        "I",
+        "IV",
+        "vii°6",
+        "I6"
+      ],
+      "required_soprano_degrees": [
+        5,
+        6,
+        7,
+        1
+      ],
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-33",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "5",
+      "family": "embedded phrase models EPM",
+      "name": "With IV7; cannot prepare seventh of V",
+      "progression": [
+        "I",
+        "IV7",
+        "V7",
+        "I"
+      ],
+      "required_soprano_degrees": [
+        3,
+        2,
+        2,
+        1
+      ],
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-34",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "6",
+      "family": "embedded phrase models EPM",
+      "name": "With ii7; omit fifth in ii7 or V7",
+      "progression": [
+        "I",
+        "ii7",
+        "V7",
+        "I"
+      ],
+      "required_soprano_degrees": [
+        1,
+        1,
+        7,
+        1
+      ],
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-35",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "7",
+      "family": "embedded phrase models EPM",
+      "name": "Inverted ii7 and V7 variant",
+      "progression": [
+        "I",
+        "ii6/5",
+        "V4/2",
+        "I6"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-36",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "8",
+      "family": "expansions with vi and iii",
+      "name": "vi bridging to IV",
+      "progression": [
+        "I",
+        "vi",
+        "IV",
+        "V"
+      ],
+      "required_soprano_degrees": [
+        3,
+        6,
+        6,
+        5
+      ],
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-37",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "9",
+      "family": "expansions with vi and iii",
+      "name": "iii bridging to IV",
+      "progression": [
+        "I",
+        "iii",
+        "IV",
+        "I"
+      ],
+      "required_soprano_degrees": [
+        1,
+        7,
+        6,
+        5
+      ],
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-38",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "10",
+      "family": "expansions with vi and iii",
+      "name": "iii7 bridging to IV",
+      "progression": [
+        "I",
+        "iii7",
+        "IV",
+        "I"
+      ],
+      "required_soprano_degrees": [
+        1,
+        7,
+        6,
+        5
+      ],
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-39",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "11",
+      "family": "expansions with vi and iii",
+      "name": "vi in deceptive motion; 8-7 and 6-5 figures",
+      "progression": [],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-40",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "12a",
+      "family": "reharmonized 10 relative major minor",
+      "name": "III in reharmonized 10",
+      "progression": [],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-41",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "12b",
+      "family": "reharmonized 10 relative major minor",
+      "name": "Alternate soprano",
+      "progression": [],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-42",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 3,
+      "printed_page": 14,
+      "figure": "12c",
+      "family": "reharmonized 10 relative major minor",
+      "name": "Alternate bass",
+      "progression": [],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-3.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-43",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 4,
+      "printed_page": 15,
+      "figure": "1",
+      "family": "lament bass",
+      "name": "Static soprano; typically minor",
+      "progression": [
+        "i",
+        "v6",
+        "iv6",
+        "V"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-4.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-44",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 4,
+      "printed_page": 15,
+      "figure": "2",
+      "family": "lament bass",
+      "name": "Ascending soprano; typically minor",
+      "progression": [
+        "i",
+        "v6",
+        "iv6",
+        "V"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-4.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-45",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 4,
+      "printed_page": 15,
+      "figure": "3",
+      "family": "lament bass",
+      "name": "Chromaticized bass; static soprano also works",
+      "progression": [
+        "i",
+        "V6",
+        "iv6",
+        "IV6",
+        "V"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-4.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-46",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 4,
+      "printed_page": 15,
+      "figure": "1",
+      "family": "bass pedals",
+      "name": "Pedal IV6/4; alternate figured-bass reading",
+      "progression": [
+        "I",
+        "IV6/4",
+        "I"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-4.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-47",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 4,
+      "printed_page": 15,
+      "figure": "2",
+      "family": "bass pedals",
+      "name": "Pedal I6/4; alternate figured-bass reading",
+      "progression": [
+        "V",
+        "I6/4",
+        "V"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-4.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-48",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 4,
+      "printed_page": 15,
+      "figure": "3",
+      "family": "bass pedals",
+      "name": "EPM with tonic pedal; predominant or dominant substitutions",
+      "progression": [
+        "I",
+        "IV",
+        "V7",
+        "I"
+      ],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-4.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-49",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 4,
+      "printed_page": 15,
+      "figure": "1",
+      "family": "bass pedal idioms",
+      "name": "Quiescenza Q-Line",
+      "progression": [],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-4.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    },
+    {
+      "id": "pattern-50",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 4,
+      "printed_page": 15,
+      "figure": "2",
+      "family": "bass pedal idioms",
+      "name": "Minor Q-Line",
+      "progression": [],
+      "required_soprano_degrees": null,
+      "image": "references/voice-leading-extended/pages/page-4.png",
+      "review_status": "visually indexed; inspect original diagram before realization",
+      "limitations": "Exact inner voices, durations, alternatives and annotations are not fully transcribed."
+    }
+  ],
+  "general_considerations": [
+    {
+      "id": "general-1",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 5,
+      "printed_page": 16,
+      "item": 1,
+      "name": "Soprano degree 1",
+      "strength": "most often",
+      "recommendation": "I",
+      "image": "references/voice-leading-extended/pages/page-5.png",
+      "checker_status": "reference guidance; not automatically enforced"
+    },
+    {
+      "id": "general-2",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 5,
+      "printed_page": 16,
+      "item": 2,
+      "name": "Soprano degree 3",
+      "strength": "most often",
+      "recommendation": "I",
+      "image": "references/voice-leading-extended/pages/page-5.png",
+      "checker_status": "reference guidance; not automatically enforced"
+    },
+    {
+      "id": "general-3",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 5,
+      "printed_page": 16,
+      "item": 3,
+      "name": "Soprano degree 5",
+      "strength": "most often",
+      "recommendation": "I6 or I",
+      "image": "references/voice-leading-extended/pages/page-5.png",
+      "checker_status": "reference guidance; not automatically enforced"
+    },
+    {
+      "id": "general-4",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 5,
+      "printed_page": 16,
+      "item": 4,
+      "name": "Soprano degree 6",
+      "strength": "most often",
+      "recommendation": "IV",
+      "image": "references/voice-leading-extended/pages/page-5.png",
+      "checker_status": "reference guidance; not automatically enforced"
+    },
+    {
+      "id": "general-5",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 5,
+      "printed_page": 16,
+      "item": 5,
+      "name": "Soprano degree 4",
+      "strength": "most often",
+      "recommendation": "V7",
+      "image": "references/voice-leading-extended/pages/page-5.png",
+      "checker_status": "reference guidance; not automatically enforced"
+    },
+    {
+      "id": "general-6",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 5,
+      "printed_page": 16,
+      "item": 6,
+      "name": "Soprano degree 2",
+      "strength": "usually",
+      "recommendation": "V within an expansion; ii to V at a cadence",
+      "image": "references/voice-leading-extended/pages/page-5.png",
+      "checker_status": "reference guidance; not automatically enforced"
+    },
+    {
+      "id": "general-7",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 5,
+      "printed_page": 16,
+      "item": 7,
+      "name": "V4/2 resolution",
+      "strength": "ALWAYS in the supplied teaching framework",
+      "recommendation": "I6",
+      "image": "references/voice-leading-extended/pages/page-5.png",
+      "checker_status": "reference guidance; not automatically enforced"
+    },
+    {
+      "id": "general-8",
+      "source_id": "voice-leading-extended",
+      "pdf_page": 5,
+      "printed_page": 16,
+      "item": 8,
+      "name": "IV6 soprano harmonization",
+      "strength": "usually",
+      "recommendation": "soprano degree 4",
+      "image": "references/voice-leading-extended/pages/page-5.png",
+      "checker_status": "reference guidance; not automatically enforced"
+    }
+  ]
+}
