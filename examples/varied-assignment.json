@@ -1,0 +1,5 @@
+{
+  "instructions": "Preserve the soprano and rhythm. Analyze the sounding chords; no chord progression is prescribed. End on tonic.",
+  "preserve_soprano": true,
+  "require_tonic_ending": true
+}

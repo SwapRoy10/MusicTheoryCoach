@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "music-theory-coach"
+version = "0.1.0"
+description = "A small, independently checked SATB MusicXML coach"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+pdf = ["reportlab>=4,<6", "pymupdf>=1.24,<2"]
+
+[project.scripts]
+music-theory-coach = "coach.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["coach*"]
