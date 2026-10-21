@@ -27,6 +27,9 @@ htmlcov/
 .idea/
 .vscode/
 
+# Built web interface (python web/build.py)
+site/
+
 # Reference originals stay on the user's computer (docs/REFERENCE_LIBRARY.md).
 # The repository carries only references/voice-leading-extended/public-catalog.json.
 references/voice-leading-extended/source.pdf

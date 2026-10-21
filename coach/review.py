@@ -136,24 +136,22 @@ def paradigm_marks(score, matches):
     return marks
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description="Review a longer chord-staff SATB score using explicit bottom-up voice ranking")
-    parser.add_argument("score", type=Path)
-    parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--pdf", action="store_true")
-    parser.add_argument("--musescore")
-    args = parser.parse_args(argv)
-    if args.out.exists() and any(args.out.iterdir()):
-        raise ValueError("Choose a new or empty output directory")
-    score, _, scope = read_ranked(args.score)
-    args.out.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(args.score, args.out / ("input-snapshot" + args.score.suffix))
-    root = root_from_file(args.score)
-    # The complete input snapshot is retained. Remove only all-rest trailing bars for engraving.
+def run_review(score_path, out):
+    """Analyze one score and return the review data without writing reports.
+
+    Writes only ``review-input.musicxml`` into ``out``: the input with all-rest
+    trailing measures removed. Note IDs in the result refer to that file, so
+    renderers (the PDF export and the web interface) must draw that file.
+    """
+    score_path, out = Path(score_path), Path(out)
+    score, _, scope = read_ranked(score_path)
+    out.mkdir(parents=True, exist_ok=True)
+    root = root_from_file(score_path)
+    # Remove only all-rest trailing bars for engraving.
     for part in root.findall("part"):
         for m in list(part.findall("measure"))[len(score.measures):]:
             part.remove(m)
-    source = args.out / "review-input.musicxml"
+    source = out / "review-input.musicxml"
     ET.ElementTree(root).write(source, encoding="utf-8", xml_declaration=True)
     score, supplied, _ = read_ranked(source)
     assignment = constraints_for(score, {"instructions": "Review the full score. Voices assigned bottom-up by pitch. Original numerals are labels to audit, not required harmony."})
@@ -252,23 +250,43 @@ def main(argv=None):
                 local_proposals.append(proposal)
     scope_notes += local_proposals
     marks = paradigm_marks(score,matches)
-    review = {"input_name": args.score.name, "harmony": harmony, "scope_notes": scope_notes, "label_notes": label_notes,
+    review = {"input_name": score_path.name, "harmony": harmony, "scope_notes": scope_notes, "label_notes": label_notes,
               "correction_notes": local_proposals, "paradigm_notes": paradigm_notes, "marks": marks}
-    result = {"input_sha256": hashlib.sha256(args.score.read_bytes()).hexdigest(), "scope": scope,
+    result = {"input_sha256": hashlib.sha256(score_path.read_bytes()).hexdigest(), "scope": scope,
               "score": score.data(), "supplied_labels": supplied, "harmony": harmony, "findings": findings,
               "paradigms": matches, "local_proposals": local_proposals, "review": review}
-    save_json(args.out / "analysis.json", result)
     report = ["# Score review", "", "## Roman numerals", "", *label_notes, *local_proposals,
               "", "## Paradigms", "", *paradigm_notes, "", "## Findings", ""]
     report += [f"{i}. {f['severity'].upper()} - m. {f['measure']}, beat {f['beat']} - {f['rule']}: {f['message']} Evidence: "
                + "; ".join(f"{n['voice']} {n['pitch']} (m. {n['measure']}, b. {n['beat']})" for n in f["notes"])
                for i,f in enumerate(findings,1)]
-    (args.out / "report.md").write_text("\n\n".join(report)+"\n", encoding="utf-8")
+    return {"result": result, "report": "\n\n".join(report) + "\n", "source": source,
+            "score": score, "assignment": assignment}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Review a longer chord-staff SATB score using explicit bottom-up voice ranking")
+    parser.add_argument("score", type=Path)
+    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--pdf", action="store_true")
+    parser.add_argument("--musescore")
+    args = parser.parse_args(argv)
+    if args.out.exists() and any(args.out.iterdir()):
+        raise ValueError("Choose a new or empty output directory")
+    read_ranked(args.score)  # Reject unsupported input before creating the output directory.
+    args.out.mkdir(parents=True, exist_ok=True)
+    # The complete input snapshot is retained alongside the trimmed engraving source.
+    shutil.copy2(args.score, args.out / ("input-snapshot" + args.score.suffix))
+    reviewed = run_review(args.score, args.out)
+    result, score = reviewed["result"], reviewed["score"]
+    save_json(args.out / "analysis.json", result)
+    (args.out / "report.md").write_text(reviewed["report"], encoding="utf-8")
     if args.pdf:
         from .pdf_export import export_pdf
-        export_pdf(source, score, assignment, findings, [], args.out, args.musescore,
-                   reader=lambda path: read_ranked(path)[0], review=review)
-    print(f"Reviewed {len(score.measures)} musical measures, {len(harmony)} sonorities; {dict(Counter(f['severity'] for f in findings))}; {len(matches)} paradigm schemes/variants.")
+        export_pdf(reviewed["source"], score, reviewed["assignment"], result["findings"], [], args.out, args.musescore,
+                   reader=lambda path: read_ranked(path)[0], review=result["review"])
+    print(f"Reviewed {len(score.measures)} musical measures, {len(result['harmony'])} sonorities; "
+          f"{dict(Counter(f['severity'] for f in result['findings']))}; {len(result['paradigms'])} paradigm schemes/variants.")
     return 0
 
 

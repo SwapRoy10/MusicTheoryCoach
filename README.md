@@ -4,6 +4,18 @@ A local first-milestone prototype for short SATB MusicXML exercises. It extracts
 
 The [current annotated score](examples/reviews/testScore/annotated-score.pdf) demonstrates the latest format: named paradigm brackets, raised/stacked inversion figures, numeral corrections and findings. Its source and analysis are kept together in [examples/reviews/testScore](examples/reviews/testScore/README.md). Other reports are generated into ignored `output/` folders.
 
+## Web interface
+
+`web/` is a static site that reviews a score in the browser and marks the results on the engraved score: errors in red, suggestions in amber, numbered findings above each system, named paradigm brackets, and the reviewed Roman numerals (with stacked figures) under each system. Clicking a finding, numeral or paradigm rings the notes involved; clicking a marked note opens its finding.
+
+The analysis is this repository's own Python package running in the page through [Pyodide](https://pyodide.org), so scores are never uploaded and there is no server to run. [Verovio](https://www.verovio.org) engraves the reviewed MusicXML. The analyzer numbers `<note>` elements `n1`, `n2`, … in document order; the page writes those IDs into the MusicXML before engraving, and Verovio keeps them on the rendered notes, which links each finding to its notes.
+
+```sh
+python web/build.py --serve     # then open http://localhost:8000
+```
+
+`build.py` assembles `site/` (ignored by git) from `web/`, `coach/`, the reference catalog and four examples. `netlify.toml` runs the same build for deployment. The page uses the `coach.review` pipeline, so it accepts the same scores (see [Extended review](#extended-review-of-two-staff-chord-scores)). Pyodide and Verovio load from the jsDelivr CDN, so the first visit downloads roughly 15 MB.
+
 ## Set up a fresh checkout
 
 Install Python 3.11 or newer and MuseScore for engraving, then run:

@@ -14,3 +14,5 @@ Keep Roman-numeral data in ASCII inversion notation (`ii6/5`), and use Campania 
 User-facing report preference: omit Review scope and Sounding harmony sections from PDFs and readable reports. Keep Roman numerals under the score, numeral corrections, paradigms, findings and practical corrections. Preserve scope and harmonic evidence in structured analysis data and developer documentation.
 
 Label paradigms on the score with their actual names and brackets spanning the participating notes, rather than P1/P2 codes. Omit “(variant)” from score labels. Explain musically relevant differences in the written findings. Never use region redaction to remove layout anchors: music glyph bounds can overlap the markers and cause noteheads to disappear. Remove only the exact marker text objects and verify preservation of the music glyphs.
+
+The web interface (`web/`) links findings to engraved notes through the analyzer's note IDs: `n1`, `n2`, … numbering every `<note>` element in document order of the reviewed MusicXML. Keep that numbering stable, or update `withNoteIds` in `web/notation.js` together with it; `tests/test_web_bridge.py` checks the contract.
