@@ -14,7 +14,7 @@ The analysis is this repository's own Python package running in the page through
 python web/build.py --serve     # then open http://localhost:8000
 ```
 
-`build.py` assembles `site/` (ignored by git) from `web/`, `coach/`, the reference catalog and four examples. `netlify.toml` runs the same build for deployment. The page uses the `coach.review` pipeline, so it accepts the same scores (see [Extended review](#extended-review-of-two-staff-chord-scores)). Pyodide and Verovio load from the jsDelivr CDN, so the first visit downloads roughly 15 MB.
+`build.py` assembles `site/` (ignored by git) from `web/`, `coach/`, the public reference catalog (paradigm citations only) and four examples. `netlify.toml` runs the same build for deployment. The page uses the `coach.review` pipeline, so it accepts the same scores (see [Extended review](#extended-review-of-two-staff-chord-scores)). Pyodide and Verovio load from the jsDelivr CDN, so the first visit downloads roughly 15 MB.
 
 ## Set up a fresh checkout
 
