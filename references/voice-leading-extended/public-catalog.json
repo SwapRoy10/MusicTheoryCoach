@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "scope": "public subset",
+  "sources": [
+    {
+      "id": "voice-leading-extended",
+      "title": "Voice Leading Rules Summary - Extended",
+      "provided_by": "user",
+      "pdf_pages": 5,
+      "printed_pages": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "sections": [
+        "F. Contrapuntal Expansions Summary",
+        "G. General Considerations"
+      ],
+      "author": "not identified in supplied excerpt",
+      "usage_rights": "not specified; user project reference",
+      "availability": "Original PDF, page images and full index are kept locally by the user, not published."
+    }
+  ],
+  "patterns": [
+    {
+      "id": "pattern-05",
+      "source_id": "voice-leading-extended",
+      "name": "Lower neighbor with V6/5",
+      "family": "neighbor bass",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "5"
+    },
+    {
+      "id": "pattern-08",
+      "source_id": "voice-leading-extended",
+      "name": "Upper neighbor with V4/2",
+      "family": "neighbor bass",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "8"
+    },
+    {
+      "id": "pattern-11",
+      "source_id": "voice-leading-extended",
+      "name": "Parallel 10ths",
+      "family": "passing bass",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "10"
+    },
+    {
+      "id": "pattern-13",
+      "source_id": "voice-leading-extended",
+      "name": "Voice exchange with skips ascending bass",
+      "family": "incomplete neighbor bass",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "12a"
+    },
+    {
+      "id": "pattern-14",
+      "source_id": "voice-leading-extended",
+      "name": "Voice exchange with skips descending bass",
+      "family": "incomplete neighbor bass",
+      "pdf_page": 1,
+      "printed_page": 12,
+      "figure": "12b"
+    }
+  ],
+  "general_considerations": []
+}

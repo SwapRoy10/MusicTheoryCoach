@@ -70,15 +70,20 @@ def degree(pitch, fifths):
     return (STEPS.index(pitch.step) - (4 * fifths) % 7) % 7 + 1
 
 
+# Paradigms the reviewer recognizes: name, numerals, bass degrees, required soprano.
+# Names must match the reference catalog; public-catalog.json carries these entries.
+PARADIGM_SPECS = [
+    ("Lower neighbor with V6/5", ["I", "V6/5", "I"], [1, 7, 1], None),
+    ("Upper neighbor with V4/2", ["I6", "V4/2", "I6"], [3, 4, 3], None),
+    ("Voice exchange with skips ascending bass", ["I", "V4/2", "I6"], [1, 4, 3], [3, 1, 1]),
+    ("Voice exchange with skips descending bass", ["I6", "V6/5", "I"], [3, 7, 1], [1, 3, 3]),
+    ("Parallel 10ths", ["I", "V4/3", "I6"], [1, 2, 3], [3, 4, 5]),
+]
+
+
 def paradigms(score, harmony):
     """Narrow recognition of source schemes, with actual bass/soprano checks."""
-    specs = [
-        ("Lower neighbor with V6/5", ["I", "V6/5", "I"], [1, 7, 1], None),
-        ("Upper neighbor with V4/2", ["I6", "V4/2", "I6"], [3, 4, 3], None),
-        ("Voice exchange with skips ascending bass", ["I", "V4/2", "I6"], [1, 4, 3], [3, 1, 1]),
-        ("Voice exchange with skips descending bass", ["I6", "V6/5", "I"], [3, 7, 1], [1, 3, 3]),
-        ("Parallel 10ths", ["I", "V4/3", "I6"], [1, 2, 3], [3, 4, 5]),
-    ]
+    specs = PARADIGM_SPECS
     patterns = library()["patterns"]
     frames = list(score.frames())
     matches = []

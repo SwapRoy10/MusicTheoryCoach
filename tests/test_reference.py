@@ -1,13 +1,36 @@
 from pathlib import Path
 import hashlib
 import unittest
-from coach.reference import library, search, CATALOG
+import json
+from coach.reference import library, search, public_subset, CATALOG, PUBLIC_CATALOG, PUBLIC_PATTERN_FIELDS
+from coach.review import PARADIGM_SPECS
 from coach.notation import campania_text, roman_components
 from coach.report import teaching_packet
 from coach.checker import constraints_for
 from examples.make_varied import example
 
 
+FULL = unittest.skipUnless(CATALOG.exists(), "Full reference catalog is kept locally, not in the repository")
+
+
+class PublicCatalogTests(unittest.TestCase):
+    def test_public_catalog_covers_recognized_paradigms_with_locators_only(self):
+        data = json.loads(PUBLIC_CATALOG.read_text(encoding="utf-8"))
+        self.assertEqual({p["name"] for p in data["patterns"]}, {s[0] for s in PARADIGM_SPECS})
+        self.assertEqual(data["general_considerations"], [])
+        for pattern in data["patterns"]:
+            self.assertLessEqual(set(pattern), set(PUBLIC_PATTERN_FIELDS))
+            self.assertEqual(pattern["printed_page"], pattern["pdf_page"] + 11)
+
+    @FULL
+    def test_public_catalog_is_current(self):
+        full = json.loads(CATALOG.read_text(encoding="utf-8"))
+        expected = public_subset(full, [s[0] for s in PARADIGM_SPECS])
+        self.assertEqual(json.loads(PUBLIC_CATALOG.read_text(encoding="utf-8")), expected,
+                         "Run: python -m coach.reference --export-public")
+
+
+@FULL
 class ReferenceTests(unittest.TestCase):
     def test_all_source_locators_exist_and_copy_is_exact(self):
         data = library()

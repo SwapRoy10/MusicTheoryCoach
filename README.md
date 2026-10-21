@@ -112,7 +112,7 @@ The adapter is intentionally small and uses the standard library. Its duration/b
 
 ## Personal reference library
 
-The supplied *Voice Leading Rules Summary - Extended* is preserved, visually indexed and searchable in this project. See [docs/REFERENCE_LIBRARY.md](docs/REFERENCE_LIBRARY.md). Search paradigms with `python -m coach.reference "BACH"` or `python -m coach.reference "lament"`. The source catalog and page references are included in teaching packets, and project instructions direct future paradigm work to consult the diagrams. Source conventions beyond the checker's domain are explicitly marked as reference guidance.
+The supplied *Voice Leading Rules Summary - Extended* is visually indexed and searchable on the user's computer, but its PDF, page images and full index are not published: the repository keeps only `public-catalog.json`, with page and figure citations for the paradigms the reviewer recognizes. See [docs/REFERENCE_LIBRARY.md](docs/REFERENCE_LIBRARY.md). With the local files present, search paradigms with `python -m coach.reference "BACH"` or `python -m coach.reference "lament"`. Source conventions beyond the checker's domain are explicitly marked as reference guidance.
 
 ## Extended review of two-staff chord scores
 
