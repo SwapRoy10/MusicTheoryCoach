@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Music Theory Coach</title>
+  <!-- Four voices: an SATB chord on a staff, with the alto circled the way the app flags a finding. -->
+  <rect width="64" height="64" rx="15" fill="#18202e"/>
+  <g stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.6">
+    <line x1="10" x2="54" y1="16" y2="16"/><line x1="10" x2="54" y1="24" y2="24"/>
+    <line x1="10" x2="54" y1="32" y2="32"/><line x1="10" x2="54" y1="40" y2="40"/>
+    <line x1="10" x2="54" y1="48" y2="48"/>
+  </g>
+  <g fill="#ffffff">
+    <ellipse cx="28" cy="48" rx="5.27" ry="3.825" transform="rotate(-22 28 48)"/>
+    <ellipse cx="28" cy="36" rx="5.27" ry="3.825" transform="rotate(-22 28 36)"/>
+    <ellipse cx="28" cy="12" rx="5.27" ry="3.825" transform="rotate(-22 28 12)"/>
+  </g>
+  <ellipse cx="28" cy="24" rx="5.27" ry="3.825" transform="rotate(-22 28 24)" fill="#f2a516"/>
+  <circle cx="28" cy="24" r="8" fill="none" stroke="#f2a516" stroke-width="2.4"/>
+</svg>

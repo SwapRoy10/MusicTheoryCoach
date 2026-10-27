@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "web"
 SITE = ROOT / "site"
 
-PAGE_FILES = ["index.html", "style.css", "app.js", "overlay.js", "notation.js"]
+PAGE_FILES = ["index.html", "style.css", "app.js", "overlay.js", "notation.js", "logo.svg"]
 # Python files Pyodide loads, keeping the repository layout so
 # coach/reference.py still finds the catalog at ../references/.
 PYTHON_FILES = [WEB / "bridge.py", *sorted((ROOT / "coach").glob("*.py")),

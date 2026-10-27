@@ -36,6 +36,8 @@ button { font: inherit; color: inherit; }
   background: var(--ink); color: #fff;
 }
 .bar h1 { margin: 0; font: 600 21px/1 var(--serif); letter-spacing: 0.01em; }
+.bar h1 { display: flex; align-items: center; gap: 10px; }
+.bar .logo { display: block; flex: none; width: 30px; height: 30px; border-radius: 7px; box-shadow: 0 0 0 1px #ffffff26; }
 #status { flex: 1; margin: 0; font-size: 13px; color: #c7cfdc; }
 #status.error { color: #ffb4a8; }
 .bar button, .open span {
