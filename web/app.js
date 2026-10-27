@@ -140,7 +140,7 @@ function render() {
     adjustPageHeight: true, breaks: "auto", header: "none", footer: "none",
     // Room for the overlay (finding numbers and paradigm brackets above each
     // system, reviewed numerals below) stays constant in screen pixels.
-    pageMarginTop: Math.round(10400 / scale), pageMarginBottom: Math.round(6400 / scale),
+    pageMarginTop: Math.round(13200 / scale), pageMarginBottom: Math.round(6400 / scale),
     pageMarginLeft: 40, pageMarginRight: 40, spacingSystem: Math.round(1200 / scale), svgViewBox: true,
   });
   state.toolkit.redoLayout();
