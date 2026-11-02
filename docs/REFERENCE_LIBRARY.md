@@ -40,3 +40,7 @@ These are the user's teaching conventions, not a new universal voice-leading sta
 The original author's identity and usage rights are not specified in the supplied excerpt. Store and use it locally for this user's project reference; do not commit the originals or the full index, classify it as CC0, redistribute it publicly, or add it to trusted training data on that assumption. Review status: visually inspected and indexed during implementation; exact notation remains authoritative. The index is not a fully transcribed, independently checked SATB corpus.
 
 Persistence is local to this project. It does not change the assistant's global training, establish an account-wide memory, or make the material available automatically in unrelated chats.
+
+## Species counterpoint rules
+
+A second, fully public reference covers two-voice species counterpoint: `references/species-counterpoint/rules.json`, rendered as [SPECIES_COUNTERPOINT.md](SPECIES_COUNTERPOINT.md). Unlike the voice-leading summary above, it is built from openly licensed or citable sources, so it is committed and shipped with the site. `coach.reference.search()` covers both references; `species_rules(n)` filters by species. After editing the JSON, regenerate the guide with `python references/species-counterpoint/render_doc.py` (a test checks they match).

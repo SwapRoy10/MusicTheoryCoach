@@ -13,6 +13,7 @@ import re
 FOLDER = Path(__file__).resolve().parents[1] / "references/voice-leading-extended"
 CATALOG = FOLDER / "catalog.json"                # full index, local only
 PUBLIC_CATALOG = FOLDER / "public-catalog.json"  # committed subset
+SPECIES_RULES = Path(__file__).resolve().parents[1] / "references/species-counterpoint/rules.json"
 PUBLIC_PATTERN_FIELDS = ("id", "source_id", "name", "family", "pdf_page", "printed_page", "figure")
 PUBLIC_SOURCE_FIELDS = ("id", "title", "provided_by", "pdf_pages", "printed_pages", "sections", "author", "usage_rights")
 
@@ -22,6 +23,22 @@ def library():
         if path.exists():
             return json.loads(path.read_text(encoding="utf-8"))
     return {"sources": [], "patterns": [], "general_considerations": []}
+
+
+def species_rules(species=None, category=None, strength=None):
+    """Two-voice species counterpoint rules (references/species-counterpoint/rules.json).
+
+    Filter by species number (0 = cantus firmus, 1-5), category or strength.
+    """
+    data = json.loads(SPECIES_RULES.read_text(encoding="utf-8"))
+    rules = data["rules"]
+    if species is not None:
+        rules = [r for r in rules if species in r["species"]]
+    if category:
+        rules = [r for r in rules if r["category"] == category]
+    if strength:
+        rules = [r for r in rules if r["strength"] == strength]
+    return rules
 
 
 def full_library_available():
@@ -56,7 +73,10 @@ def search(query):
     if not terms:
         return []
     matches = []
-    for item in data.get("patterns", []) + data.get("general_considerations", []):
+    items = data.get("patterns", []) + data.get("general_considerations", [])
+    if SPECIES_RULES.exists():
+        items += species_rules()
+    for item in items:
         searchable = " ".join(str(v) for k, v in item.items() if k not in ("image", "source_id"))
         words = set(re.findall(r"[a-z0-9]+", searchable.lower()))
         score = len(terms & words)
@@ -66,16 +86,22 @@ def search(query):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Find paradigms in the user's local voice-leading reference")
+    parser = argparse.ArgumentParser(description="Search the voice-leading paradigms and species counterpoint rules")
     parser.add_argument("query", nargs="?")
+    parser.add_argument("--species", type=int, choices=range(0, 6), metavar="N",
+                        help="List the counterpoint rules for species N (0 = cantus firmus, 1-5)")
     parser.add_argument("--export-public", action="store_true",
                         help="Regenerate public-catalog.json from the local full catalog")
     args = parser.parse_args()
     if args.export_public:
         export_public()
         return 0
+    if args.species is not None:
+        for rule in species_rules(args.species):
+            print(f"[{rule['strength']}] {rule['id']}: {rule['rule']}")
+        return 0
     if not args.query:
-        parser.error("give a search query or --export-public")
+        parser.error("give a search query, --species N or --export-public")
     if not full_library_available():
         print("Note: the full local catalog is absent; searching the public subset only.", flush=True)
     results = search(args.query)

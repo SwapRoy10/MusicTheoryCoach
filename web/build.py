@@ -22,7 +22,8 @@ PAGE_FILES = ["index.html", "style.css", "app.js", "overlay.js", "notation.js", 
 # coach/reference.py still finds the catalog at ../references/.
 PYTHON_FILES = [WEB / "bridge.py", *sorted((ROOT / "coach").glob("*.py")),
                 # Only the public subset: the full reference index stays on the user's computer.
-                ROOT / "references/voice-leading-extended/public-catalog.json"]
+                ROOT / "references/voice-leading-extended/public-catalog.json",
+                ROOT / "references/species-counterpoint/rules.json"]
 EXAMPLES = [
     ("Chorale with paradigms (13 bars)", ROOT / "examples/reviews/testScore/testScore.mxl"),
     ("Parallel fifths exercise", ROOT / "examples/deliberate-errors.musicxml"),

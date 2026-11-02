@@ -1,0 +1,1469 @@
+{
+  "schema_version": 1,
+  "title": "Two-voice species counterpoint rules",
+  "scope": "Strict two-voice species counterpoint after Fux (1725), as taught in current open textbooks. Rules are paraphrased; consult the cited sources for examples.",
+  "strength_levels": {
+    "required": "The sources state it as a must or never.",
+    "avoid": "A strong caution; occasional exceptions occur in good exercises.",
+    "preferred": "Style guidance that makes a better exercise.",
+    "allowed": "An explicit permission, often relaxing a stricter rule."
+  },
+  "checker_status": "Reference only. The automatic checker does not yet test species exercises.",
+  "sources": [
+    {
+      "id": "omt2-intro",
+      "title": "Introduction to Species Counterpoint",
+      "work": "Open Music Theory 2e",
+      "authors": "Mark Gotham et al.",
+      "url": "https://human.libretexts.org/Bookshelves/Music/Music_Theory/Open_Music_Theory_2e_(Gotham_et_al.)/02%3A_Counterpoint_and_Galant_Schemas/2.01%3A_Introduction_to_Species_Counterpoint",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "omt2-s1",
+      "title": "First-Species Counterpoint",
+      "work": "Open Music Theory 2e",
+      "authors": "Mark Gotham, Kris Shaffer",
+      "url": "https://viva.pressbooks.pub/openmusictheory/chapter/first-species-counterpoint/",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "omt2-s2",
+      "title": "Second-Species Counterpoint",
+      "work": "Open Music Theory 2e",
+      "authors": "Mark Gotham, Kris Shaffer",
+      "url": "https://viva.pressbooks.pub/openmusictheory/chapter/second-species-counterpoint/",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "omt2-s3",
+      "title": "Third-Species Counterpoint",
+      "work": "Open Music Theory 2e",
+      "authors": "Mark Gotham, Kris Shaffer",
+      "url": "https://viva.pressbooks.pub/openmusictheory/chapter/third-species-counterpoint/",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "omt2-s4",
+      "title": "Fourth-Species Counterpoint",
+      "work": "Open Music Theory 2e",
+      "authors": "Mark Gotham, Kris Shaffer",
+      "url": "https://viva.pressbooks.pub/openmusictheory/chapter/fourth-species-counterpoint/",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "omt2-s5",
+      "title": "Fifth-Species Counterpoint",
+      "work": "Open Music Theory 2e",
+      "authors": "Mark Gotham, Kris Shaffer",
+      "url": "https://viva.pressbooks.pub/openmusictheory/chapter/fifth-species-counterpoint/",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "omt1-s4",
+      "title": "Composing a Fourth-Species Counterpoint",
+      "work": "Open Music Theory 1e",
+      "authors": "Robin Wharton, Kris Shaffer (eds.)",
+      "url": "https://human.libretexts.org/Bookshelves/Music/Music_Theory/Open_Music_Theory_1e_(Wharton_and_Shaffer_Eds)/02%3A_Voice-Leading_and_Model_Composition/2.06%3A_Strict_Two-Voice_Composition_-_Composing_a_Fourth-Species_Counterpoint",
+      "license": "CC BY-SA"
+    },
+    {
+      "id": "mt21c",
+      "title": "Introduction to Counterpoint (ch. 30)",
+      "work": "Music Theory for the 21st-Century Classroom",
+      "authors": "Robert Hutchinson",
+      "url": "https://musictheory.pugetsound.edu/mt21c/FirstSpecies.html",
+      "license": "GNU FDL (per the book)",
+      "note": "Rules are 'slightly modified and simplified' from Fux. Species pages: FirstSpecies, SecondSpecies, ThirdSpecies, FourthSpecies, FifthSpecies.html"
+    },
+    {
+      "id": "rothgeb",
+      "title": "Music 103 species handouts (2 voices)",
+      "work": "UCSB course materials",
+      "authors": "John Rothgeb",
+      "url": "https://rothfarb.faculty.music.ucsb.edu/courses/103/First_Species(2v).html",
+      "license": "Copyright; cited, not copied",
+      "note": "Handouts for first through fourth species at the same path (Second_Species(2v).html etc.)."
+    },
+    {
+      "id": "magnuson",
+      "title": "Species V in Two Voices",
+      "work": "Sound Patterns",
+      "authors": "Phillip Magnuson",
+      "url": "https://tobyrush.com/soundpatterns/speciesctpt/spV.html",
+      "license": "CC BY 3.0"
+    },
+    {
+      "id": "cmu-s5",
+      "title": "Fifth Species (course handout)",
+      "work": "Carnegie Mellon course materials",
+      "authors": "Not named on the page",
+      "url": "https://www.andrew.cmu.edu/user/johnito/music_theory/CTP/species/5thSpecies.pdf",
+      "license": "Unstated; cited, not copied",
+      "note": "Secondary source used only for fifth-species rhythm detail; author unconfirmed."
+    },
+    {
+      "id": "wikipedia",
+      "title": "Counterpoint: Species counterpoint",
+      "work": "Wikipedia",
+      "authors": "Wikipedia contributors",
+      "url": "https://en.wikipedia.org/wiki/Counterpoint",
+      "license": "CC BY-SA 4.0",
+      "note": "Tertiary summary; used for cross-checking only."
+    }
+  ],
+  "species": [
+    {
+      "id": 0,
+      "name": "Cantus firmus",
+      "summary": "The given melody, all whole notes, that each exercise is written against."
+    },
+    {
+      "id": 1,
+      "name": "First species",
+      "summary": "Note against note (1:1): one whole note per cantus note, every interval consonant."
+    },
+    {
+      "id": 2,
+      "name": "Second species",
+      "summary": "Two half notes per cantus note (2:1); dissonance enters as the weak-beat passing tone."
+    },
+    {
+      "id": 3,
+      "name": "Third species",
+      "summary": "Four quarter notes per cantus note (4:1); adds neighbor tones, the double neighbor and the nota cambiata."
+    },
+    {
+      "id": 4,
+      "name": "Fourth species",
+      "summary": "Syncopation: half notes tied across the bar line, producing prepared suspensions that resolve down by step."
+    },
+    {
+      "id": 5,
+      "name": "Fifth species",
+      "summary": "Florid counterpoint: a free mixture of the first four species, with occasional eighth-note pairs."
+    }
+  ],
+  "rules": [
+    {
+      "id": "cf-length",
+      "species": [
+        0
+      ],
+      "category": "melody",
+      "strength": "preferred",
+      "rule": "A cantus firmus is about 8 to 16 notes long, all whole notes.",
+      "sources": [
+        "omt2-intro"
+      ]
+    },
+    {
+      "id": "cf-begin-end",
+      "species": [
+        0
+      ],
+      "category": "melody",
+      "strength": "required",
+      "rule": "The cantus firmus begins and ends on the final (do).",
+      "sources": [
+        "omt2-intro"
+      ]
+    },
+    {
+      "id": "cf-approach-final",
+      "species": [
+        0
+      ],
+      "category": "melody",
+      "strength": "required",
+      "rule": "The cantus approaches its final by step, usually re–do and sometimes ti–do.",
+      "sources": [
+        "omt2-intro"
+      ],
+      "variants": [
+        {
+          "source": "omt2-s4",
+          "says": "Fourth species needs a cantus ending re–do; a ti–do ending does not allow the suspension cadence."
+        }
+      ]
+    },
+    {
+      "id": "mel-melodic-consonance",
+      "species": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "melody",
+      "strength": "required",
+      "rule": "Melodic intervals are consonant: steps, thirds, perfect fourths, perfect fifths, the octave and the ascending minor sixth. Augmented and diminished intervals, sevenths, other sixths and anything larger than an octave are not used.",
+      "sources": [
+        "omt2-intro",
+        "mt21c"
+      ],
+      "variants": [
+        {
+          "source": "wikipedia",
+          "says": "An ascending minor sixth should be followed by downward motion."
+        },
+        {
+          "source": "omt2-intro",
+          "says": "Treats the ascending minor sixth as 'perhaps' acceptable rather than freely available."
+        }
+      ]
+    },
+    {
+      "id": "mel-no-dissonant-outline",
+      "species": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "melody",
+      "strength": "avoid",
+      "rule": "Do not outline a dissonant interval (a tritone, augmented or diminished interval, or a seventh) between melodic turning points.",
+      "sources": [
+        "omt2-intro",
+        "mt21c"
+      ],
+      "variants": [
+        {
+          "source": "wikipedia",
+          "says": "Phrases it as avoiding tritones and sevenths within three notes."
+        }
+      ]
+    },
+    {
+      "id": "mel-leap-recovery",
+      "species": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "melody",
+      "strength": "required",
+      "rule": "After a leap of a fourth or larger, move by step in the opposite direction.",
+      "sources": [
+        "omt2-intro",
+        "omt2-s3"
+      ]
+    },
+    {
+      "id": "mel-consecutive-leaps",
+      "species": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "melody",
+      "strength": "avoid",
+      "rule": "Use no more than two leaps in a row, and do not make consecutive leaps in the same direction (except outlining a consonant triad, as in Fux's F-mode cantus).",
+      "sources": [
+        "omt2-intro",
+        "wikipedia"
+      ]
+    },
+    {
+      "id": "mel-mostly-steps",
+      "species": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "melody",
+      "strength": "preferred",
+      "rule": "Move mostly by step, with occasional small leaps and rare large ones.",
+      "sources": [
+        "omt2-intro",
+        "omt2-s1"
+      ]
+    },
+    {
+      "id": "mel-range",
+      "species": [
+        0
+      ],
+      "category": "melody",
+      "strength": "preferred",
+      "rule": "Keep the cantus within a tenth, and usually within an octave.",
+      "sources": [
+        "omt2-intro"
+      ]
+    },
+    {
+      "id": "mel-single-climax",
+      "species": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "melody",
+      "strength": "preferred",
+      "rule": "Give each line one high point that is not repeated, not at the end, and ideally reached by leap. Later species may add one or two secondary high points.",
+      "sources": [
+        "omt2-intro",
+        "omt2-s2",
+        "omt2-s3"
+      ]
+    },
+    {
+      "id": "mel-climaxes-apart",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "combination",
+      "strength": "avoid",
+      "rule": "The two lines should not reach their climaxes at the same time.",
+      "sources": [
+        "omt2-intro",
+        "omt2-s1"
+      ]
+    },
+    {
+      "id": "mel-leading-tone",
+      "species": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "melody",
+      "strength": "required",
+      "rule": "The leading tone moves to the final. In modes with a whole step below the final, raise the seventh at the cadence (musica ficta), except in Phrygian.",
+      "sources": [
+        "omt2-intro",
+        "mt21c",
+        "wikipedia"
+      ],
+      "note": "Hutchinson names the raised notes: F♯ in G mixolydian, C♯ in D dorian, G♯ in A aeolian."
+    },
+    {
+      "id": "mel-no-motives",
+      "species": [
+        0
+      ],
+      "category": "melody",
+      "strength": "avoid",
+      "rule": "Do not repeat motives or melodic patterns within the cantus.",
+      "sources": [
+        "omt2-intro"
+      ]
+    },
+    {
+      "id": "comb-begin",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "beginning",
+      "strength": "required",
+      "rule": "Begin on a perfect consonance. Above the cantus the first note is do or sol (unison, fifth or octave); below the cantus it must be do (unison or octave).",
+      "sources": [
+        "omt2-s1",
+        "rothgeb",
+        "mt21c"
+      ],
+      "variants": [
+        {
+          "source": "mt21c",
+          "says": "Simplifies this to beginning on an octave or unison."
+        },
+        {
+          "source": "omt2-s1",
+          "says": "Explains that sol below the cantus would form a fourth with it, and fa would be heard as do–sol."
+        }
+      ]
+    },
+    {
+      "id": "comb-clausula-vera",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "ending",
+      "strength": "required",
+      "rule": "End on a unison or octave with do in both voices, approached by contrary stepwise motion: ti–do against re–do. The penultimate interval is therefore a sixth (counterpoint above) or a third or tenth (counterpoint below).",
+      "sources": [
+        "omt2-s1",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "comb-vertical-consonance",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "harmony",
+      "strength": "required",
+      "rule": "Consonances are the unison, thirds, the perfect fifth, sixths, the octave and their compounds. Seconds, sevenths, the tritone and the perfect fourth (between the two voices) are dissonant.",
+      "sources": [
+        "omt2-s1",
+        "rothgeb",
+        "mt21c"
+      ],
+      "note": "Where each later species may place a dissonance is set out in its own rules."
+    },
+    {
+      "id": "comb-no-parallel-perfect",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "motion",
+      "strength": "required",
+      "rule": "No parallel unisons, fifths or octaves, including compound forms (a fifth to a twelfth counts).",
+      "sources": [
+        "omt2-s1",
+        "mt21c",
+        "wikipedia"
+      ]
+    },
+    {
+      "id": "comb-no-consecutive-same-perfect",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "motion",
+      "strength": "required",
+      "rule": "Never place two perfect consonances of the same size in a row, even by contrary motion. A different perfect interval next (octave then fifth) is allowed but best avoided.",
+      "sources": [
+        "omt2-s1"
+      ]
+    },
+    {
+      "id": "comb-no-direct-perfect",
+      "species": [
+        1
+      ],
+      "category": "motion",
+      "strength": "required",
+      "rule": "Approach a perfect consonance only by contrary or oblique motion, never by similar motion (no direct or hidden fifths and octaves).",
+      "sources": [
+        "omt2-s1",
+        "rothgeb",
+        "mt21c",
+        "wikipedia"
+      ]
+    },
+    {
+      "id": "comb-imperfect-run",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "motion",
+      "strength": "avoid",
+      "rule": "Use no more than three of the same imperfect consonance (thirds or sixths) in a row.",
+      "sources": [
+        "omt2-s1",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "comb-prefer-imperfect",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "harmony",
+      "strength": "preferred",
+      "rule": "Prefer imperfect consonances to perfect ones everywhere except the first and last intervals.",
+      "sources": [
+        "omt2-s1",
+        "rothgeb"
+      ]
+    },
+    {
+      "id": "comb-contrary-motion",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "motion",
+      "strength": "preferred",
+      "rule": "Favor contrary motion and vary the types of motion through the exercise.",
+      "sources": [
+        "omt2-s1",
+        "wikipedia"
+      ]
+    },
+    {
+      "id": "comb-no-similar-leaps",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "motion",
+      "strength": "avoid",
+      "rule": "Avoid similar motion combined with leaps, especially large ones.",
+      "sources": [
+        "omt2-s1"
+      ]
+    },
+    {
+      "id": "comb-no-crossing-overlap",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "spacing",
+      "strength": "avoid",
+      "rule": "Avoid voice crossing and voice overlap.",
+      "sources": [
+        "omt2-s1"
+      ]
+    },
+    {
+      "id": "comb-spacing",
+      "species": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "category": "spacing",
+      "strength": "avoid",
+      "rule": "Keep the voices within an octave where possible, exceed a tenth only briefly when unavoidable, and never exceed a twelfth.",
+      "sources": [
+        "omt2-s1",
+        "wikipedia"
+      ]
+    },
+    {
+      "id": "s1-rhythm",
+      "species": [
+        1
+      ],
+      "category": "rhythm",
+      "strength": "required",
+      "rule": "One whole note against each whole note of the cantus.",
+      "sources": [
+        "omt2-s1",
+        "rothgeb"
+      ]
+    },
+    {
+      "id": "s1-all-consonant",
+      "species": [
+        1
+      ],
+      "category": "harmony",
+      "strength": "required",
+      "rule": "Every vertical interval is consonant.",
+      "sources": [
+        "omt2-s1",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s1-unison",
+      "species": [
+        1
+      ],
+      "category": "harmony",
+      "strength": "required",
+      "rule": "Use the unison only for the first and last intervals.",
+      "sources": [
+        "omt2-s1",
+        "rothgeb",
+        "wikipedia"
+      ]
+    },
+    {
+      "id": "s1-repeated-notes",
+      "species": [
+        1
+      ],
+      "category": "melody",
+      "strength": "avoid",
+      "rule": "Avoid repeating a note; at most one repetition in the exercise.",
+      "sources": [
+        "omt2-s1",
+        "mt21c"
+      ],
+      "variants": [
+        {
+          "source": "rothgeb",
+          "says": "Allows the added voice to repeat a tone in first species."
+        }
+      ]
+    },
+    {
+      "id": "s2-rhythm",
+      "species": [
+        2
+      ],
+      "category": "rhythm",
+      "strength": "required",
+      "rule": "Two half notes against each cantus note; the final bar is a whole note.",
+      "sources": [
+        "omt2-s2",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s2-start",
+      "species": [
+        2
+      ],
+      "category": "beginning",
+      "strength": "allowed",
+      "rule": "The first bar may begin with a half rest followed by a half note, or with two half notes.",
+      "sources": [
+        "omt2-s2",
+        "rothgeb",
+        "mt21c"
+      ],
+      "variants": [
+        {
+          "source": "omt2-s2",
+          "says": "Calls the opening half rest 'often preferable'."
+        }
+      ]
+    },
+    {
+      "id": "s2-downbeat-consonant",
+      "species": [
+        2
+      ],
+      "category": "harmony",
+      "strength": "required",
+      "rule": "Every downbeat is consonant; prefer thirds and sixths there and avoid the unison.",
+      "sources": [
+        "omt2-s2",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s2-passing-only",
+      "species": [
+        2
+      ],
+      "category": "dissonance",
+      "strength": "required",
+      "rule": "A weak-beat dissonance must be a passing tone: approached by step and left by step in the same direction. No other dissonance is permitted.",
+      "sources": [
+        "omt2-s2",
+        "rothgeb",
+        "mt21c"
+      ],
+      "variants": [
+        {
+          "source": "wikipedia",
+          "says": "Also lists neighbor and escape tones for second species. The textbooks cited here do not allow them."
+        }
+      ]
+    },
+    {
+      "id": "s2-consonant-weak-beats",
+      "species": [
+        2
+      ],
+      "category": "melody",
+      "strength": "preferred",
+      "rule": "A consonant weak beat should fit a recognised pattern: consonant passing tone, consonant neighbor, substitution, skipped passing tone, interval subdivision, change of register, or delay of melodic progression.",
+      "sources": [
+        "omt2-s2"
+      ]
+    },
+    {
+      "id": "s2-barline",
+      "species": [
+        2
+      ],
+      "category": "motion",
+      "strength": "required",
+      "rule": "Motion from a weak beat into the next downbeat follows first-species rules: no parallel perfect intervals, and perfect consonances approached only by contrary motion.",
+      "sources": [
+        "omt2-s2",
+        "mt21c",
+        "rothgeb"
+      ]
+    },
+    {
+      "id": "s2-downbeat-perfect",
+      "species": [
+        2
+      ],
+      "category": "motion",
+      "strength": "required",
+      "rule": "Do not begin consecutive bars with the same perfect interval.",
+      "sources": [
+        "omt2-s2",
+        "rothgeb"
+      ],
+      "variants": [
+        {
+          "source": "mt21c",
+          "says": "Forbids consecutive downbeat octaves, but allows consecutive downbeat fifths when a leap of a fourth follows the first fifth."
+        }
+      ]
+    },
+    {
+      "id": "s2-downbeat-imperfect-run",
+      "species": [
+        2
+      ],
+      "category": "motion",
+      "strength": "avoid",
+      "rule": "Do not begin more than three bars in a row with the same imperfect consonance.",
+      "sources": [
+        "omt2-s2"
+      ]
+    },
+    {
+      "id": "s2-downbeat-melody",
+      "species": [
+        2
+      ],
+      "category": "melody",
+      "strength": "avoid",
+      "rule": "Consecutive downbeat notes should not form a dissonant melodic interval (except after an octave leap that steps back).",
+      "sources": [
+        "omt2-s2"
+      ]
+    },
+    {
+      "id": "s2-direct-between-downbeats",
+      "species": [
+        2
+      ],
+      "category": "motion",
+      "strength": "allowed",
+      "rule": "Direct fifths and octaves between successive downbeats are acceptable, because the intervening note weakens them.",
+      "sources": [
+        "omt2-s2"
+      ],
+      "variants": [
+        {
+          "source": "rothgeb",
+          "says": "Requires every downbeat perfect consonance to be approached by contrary or oblique motion."
+        }
+      ]
+    },
+    {
+      "id": "s2-leap-placement",
+      "species": [
+        2
+      ],
+      "category": "melody",
+      "strength": "preferred",
+      "rule": "Leap from strong to weak beat within the bar rather than across the bar line.",
+      "sources": [
+        "omt2-s2"
+      ]
+    },
+    {
+      "id": "s2-no-repeats",
+      "species": [
+        2
+      ],
+      "category": "melody",
+      "strength": "required",
+      "rule": "Do not repeat a note, within the bar or across the bar line.",
+      "sources": [
+        "rothgeb",
+        "mt21c"
+      ],
+      "variants": [
+        {
+          "source": "mt21c",
+          "says": "States the prohibition only across bar lines."
+        }
+      ]
+    },
+    {
+      "id": "s2-unison",
+      "species": [
+        2
+      ],
+      "category": "harmony",
+      "strength": "allowed",
+      "rule": "A unison may occur on the weak beat; not on a downbeat except at the start and end.",
+      "sources": [
+        "omt2-s2",
+        "rothgeb"
+      ]
+    },
+    {
+      "id": "s2-penultimate",
+      "species": [
+        2
+      ],
+      "category": "ending",
+      "strength": "allowed",
+      "rule": "The penultimate bar may be a whole note or two half notes, ending in the clausula vera.",
+      "sources": [
+        "omt2-s2",
+        "rothgeb"
+      ],
+      "variants": [
+        {
+          "source": "mt21c",
+          "says": "Gives fixed formulas: with the cantus below, a fifth then a sixth into the octave; with the cantus above, a fifth then a third; Phrygian has its own formula."
+        }
+      ]
+    },
+    {
+      "id": "s3-rhythm",
+      "species": [
+        3
+      ],
+      "category": "rhythm",
+      "strength": "required",
+      "rule": "Four quarter notes against each cantus note (the first bar may open with a quarter rest); the final bar is a whole note.",
+      "sources": [
+        "omt2-s3",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s3-downbeat-consonant",
+      "species": [
+        3
+      ],
+      "category": "harmony",
+      "strength": "required",
+      "rule": "Beat 1 is always consonant and never a unison; prefer imperfect consonances there.",
+      "sources": [
+        "omt2-s3",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s3-dissonance-types",
+      "species": [
+        3
+      ],
+      "category": "dissonance",
+      "strength": "required",
+      "rule": "Dissonance may fall only on beats 2, 3 or 4, and only as a passing tone, a neighbor tone, part of a double neighbor, or the second note of a nota cambiata.",
+      "sources": [
+        "omt2-s3",
+        "rothgeb"
+      ],
+      "variants": [
+        {
+          "source": "mt21c",
+          "says": "Lists only passing tones and the cambiata as allowed dissonances."
+        }
+      ]
+    },
+    {
+      "id": "s3-dissonance-by-step",
+      "species": [
+        3
+      ],
+      "category": "dissonance",
+      "strength": "required",
+      "rule": "Approach and leave every dissonance by step, except within the double neighbor and the nota cambiata.",
+      "sources": [
+        "omt2-s3",
+        "rothgeb"
+      ]
+    },
+    {
+      "id": "s3-double-passing",
+      "species": [
+        3
+      ],
+      "category": "dissonance",
+      "strength": "allowed",
+      "rule": "Two dissonant passing tones in a row are acceptable when the line keeps moving by step in one direction off the downbeats (for example P4 then d5).",
+      "sources": [
+        "omt2-s3"
+      ]
+    },
+    {
+      "id": "s3-nota-cambiata",
+      "species": [
+        3
+      ],
+      "category": "dissonance",
+      "strength": "required",
+      "rule": "The nota cambiata is five notes from downbeat to downbeat: a step, a leap of a third in the same direction, then two steps back. Only the second note is dissonant; notes 1, 3 and 5 are consonant.",
+      "sources": [
+        "omt2-s3",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s3-double-neighbor",
+      "species": [
+        3
+      ],
+      "category": "dissonance",
+      "strength": "required",
+      "rule": "In a double neighbor, beats 1 and 4 share a pitch, beats 2 and 3 are the steps above and below, and the line continues by step into the next downbeat.",
+      "sources": [
+        "omt2-s3"
+      ]
+    },
+    {
+      "id": "s3-leaps-consonant",
+      "species": [
+        3
+      ],
+      "category": "melody",
+      "strength": "required",
+      "rule": "Every melodic leap connects two consonant notes.",
+      "sources": [
+        "omt2-s3"
+      ]
+    },
+    {
+      "id": "s3-leap-placement",
+      "species": [
+        3
+      ],
+      "category": "melody",
+      "strength": "preferred",
+      "rule": "Place leaps within the bar rather than across the bar line, and move mostly by step.",
+      "sources": [
+        "omt2-s3"
+      ]
+    },
+    {
+      "id": "s3-barline",
+      "species": [
+        3
+      ],
+      "category": "motion",
+      "strength": "required",
+      "rule": "Beat 4 into the next downbeat follows first-species rules; no parallel perfect intervals from beat 3 or 4 into the downbeat.",
+      "sources": [
+        "omt2-s3",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s3-downbeat-parallels",
+      "species": [
+        3
+      ],
+      "category": "motion",
+      "strength": "required",
+      "rule": "If a downbeat is a fifth, beats 3 and 4 of the previous bar must not be fifths; if a downbeat is an octave, beats 2, 3 and 4 of the previous bar must not be octaves. Intervening notes do not cancel parallel fifths or octaves.",
+      "sources": [
+        "omt2-s3",
+        "rothgeb"
+      ],
+      "variants": [
+        {
+          "source": "rothgeb",
+          "says": "States only that beat 3 and the next beat 1 may not form parallel perfect consonances."
+        },
+        {
+          "source": "mt21c",
+          "says": "Forbids direct fifths and octaves into any downbeat."
+        }
+      ]
+    },
+    {
+      "id": "s3-downbeat-perfect-run",
+      "species": [
+        3
+      ],
+      "category": "motion",
+      "strength": "required",
+      "rule": "No three consecutive bars may begin with the same perfect interval; two in a row are acceptable in third species, and direct fifths and octaves between successive downbeats are allowed.",
+      "sources": [
+        "omt2-s3"
+      ],
+      "variants": [
+        {
+          "source": "mt21c",
+          "says": "Does not allow direct fifths and octaves into a downbeat."
+        }
+      ]
+    },
+    {
+      "id": "s3-downbeat-imperfect-run",
+      "species": [
+        3
+      ],
+      "category": "motion",
+      "strength": "avoid",
+      "rule": "Do not begin more than three bars in a row with the same imperfect consonance.",
+      "sources": [
+        "omt2-s3"
+      ]
+    },
+    {
+      "id": "s3-no-repeats",
+      "species": [
+        3
+      ],
+      "category": "melody",
+      "strength": "required",
+      "rule": "Do not repeat a note within the bar or across the bar line.",
+      "sources": [
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s3-unison",
+      "species": [
+        3
+      ],
+      "category": "harmony",
+      "strength": "allowed",
+      "rule": "A unison is allowed on any beat except beat 1.",
+      "sources": [
+        "omt2-s3",
+        "rothgeb"
+      ]
+    },
+    {
+      "id": "s3-penultimate",
+      "species": [
+        3
+      ],
+      "category": "ending",
+      "strength": "required",
+      "rule": "The last quarter of the penultimate bar is ti over re (or re under ti), leading by contrary step into the final unison or octave.",
+      "sources": [
+        "omt2-s3",
+        "rothgeb"
+      ],
+      "variants": [
+        {
+          "source": "mt21c",
+          "says": "Gives fixed penultimate-bar figures, including a cambiata-based one."
+        }
+      ]
+    },
+    {
+      "id": "s4-rhythm",
+      "species": [
+        4
+      ],
+      "category": "rhythm",
+      "strength": "required",
+      "rule": "Begin with a half rest; each weak-beat half note is tied over the bar line to the next downbeat, so the counterpoint is offset from the cantus by a half note.",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s4-oblique-motion",
+      "species": [
+        4
+      ],
+      "category": "motion",
+      "strength": "required",
+      "rule": "Because each voice moves while the other holds, pure fourth species proceeds entirely in oblique motion.",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4"
+      ]
+    },
+    {
+      "id": "s4-preparation",
+      "species": [
+        4
+      ],
+      "category": "suspension",
+      "strength": "required",
+      "rule": "The weak-beat note that prepares a tie is always consonant.",
+      "sources": [
+        "omt2-s4",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s4-resolution",
+      "species": [
+        4
+      ],
+      "category": "suspension",
+      "strength": "required",
+      "rule": "A dissonant suspension on the downbeat resolves down by step to a consonance on the weak beat.",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s4-suspensions-above",
+      "species": [
+        4
+      ],
+      "category": "suspension",
+      "strength": "preferred",
+      "rule": "Above the cantus, the dissonant suspensions are 7–6 and 4–3 (preferred, resolving to imperfect consonances) and 9–8.",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4"
+      ],
+      "variants": [
+        {
+          "source": "mt21c",
+          "says": "Allows only 7–6 and 4–3 above; 9–8 and 2–1 are not allowed."
+        },
+        {
+          "source": "rothgeb",
+          "says": "Allows 2–1, 4–3, 7–6 and 9–8 above."
+        }
+      ]
+    },
+    {
+      "id": "s4-suspensions-below",
+      "species": [
+        4
+      ],
+      "category": "suspension",
+      "strength": "preferred",
+      "rule": "Below the cantus, 2–3 is the main dissonant suspension; 4–5 is also available.",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4"
+      ],
+      "variants": [
+        {
+          "source": "rothgeb",
+          "says": "Allows 2–3, 4–5 and 9–10 below."
+        },
+        {
+          "source": "omt2-s4",
+          "says": "Mentions only 2–3 below as a dissonant suspension."
+        }
+      ]
+    },
+    {
+      "id": "s4-no-7-8-below",
+      "species": [
+        4
+      ],
+      "category": "suspension",
+      "strength": "avoid",
+      "rule": "Avoid the 7–8 suspension below the cantus.",
+      "sources": [
+        "omt1-s4",
+        "rothgeb"
+      ],
+      "variants": [
+        {
+          "source": "omt1-s4",
+          "says": "Possible in theory but sounds less pleasing."
+        },
+        {
+          "source": "rothgeb",
+          "says": "Calls it not usable."
+        }
+      ]
+    },
+    {
+      "id": "s4-consonant-syncope",
+      "species": [
+        4
+      ],
+      "category": "suspension",
+      "strength": "allowed",
+      "rule": "A tied note that is consonant on the downbeat (such as 5–6 or 6–5) is a consonant syncope; it may be left by step or leap.",
+      "sources": [
+        "omt2-s4",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s4-max-suspensions",
+      "species": [
+        4
+      ],
+      "category": "suspension",
+      "strength": "preferred",
+      "rule": "Use dissonant suspensions as often as possible; they are the point of the species.",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4"
+      ]
+    },
+    {
+      "id": "s4-suspension-runs",
+      "species": [
+        4
+      ],
+      "category": "suspension",
+      "strength": "avoid",
+      "rule": "Use no more than three suspensions of the same kind in a row, and never two 9–8, 4–5 or 6–5 in a row (their resolutions make consecutive perfect intervals).",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4"
+      ]
+    },
+    {
+      "id": "s4-after-beat-parallels",
+      "species": [
+        4
+      ],
+      "category": "motion",
+      "strength": "avoid",
+      "rule": "Avoid fifths or octaves on consecutive weak beats ('after-beat' parallels); a dissonant suspension between them does not hide them.",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4",
+        "rothgeb"
+      ]
+    },
+    {
+      "id": "s4-upward-leaps",
+      "species": [
+        4
+      ],
+      "category": "melody",
+      "strength": "preferred",
+      "rule": "Suspensions pull the line downward; include one or two upward leaps (from a downbeat consonance) to keep it in range.",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4"
+      ]
+    },
+    {
+      "id": "s4-breaking-species",
+      "species": [
+        4
+      ],
+      "category": "rhythm",
+      "strength": "allowed",
+      "rule": "Break species (move without a tie, following second-species rules) only when neither a dissonant suspension nor a consonant tie works; resume ties at once, and do it at most once in an exercise.",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4"
+      ],
+      "variants": [
+        {
+          "source": "rothgeb",
+          "says": "Allows it once or twice; if breaking after a weak-beat unison, leave the unison by contrary motion."
+        }
+      ]
+    },
+    {
+      "id": "s4-no-repeats",
+      "species": [
+        4
+      ],
+      "category": "melody",
+      "strength": "required",
+      "rule": "Do not repeat a tone (other than the tie itself).",
+      "sources": [
+        "rothgeb"
+      ]
+    },
+    {
+      "id": "s4-cadence",
+      "species": [
+        4
+      ],
+      "category": "ending",
+      "strength": "required",
+      "rule": "The cantus must end re–do. The penultimate bar holds a tied do resolving to ti: a 7–6 suspension above or a 2–3 below. The final note is a whole-note do.",
+      "sources": [
+        "omt2-s4",
+        "omt1-s4",
+        "rothgeb",
+        "mt21c"
+      ]
+    },
+    {
+      "id": "s5-mixture",
+      "species": [
+        5
+      ],
+      "category": "rhythm",
+      "strength": "preferred",
+      "rule": "Combine the four earlier species freely, so that no single species dominates.",
+      "sources": [
+        "omt2-s5",
+        "mt21c",
+        "wikipedia"
+      ]
+    },
+    {
+      "id": "s5-species-rules-apply",
+      "species": [
+        5
+      ],
+      "category": "rhythm",
+      "strength": "required",
+      "rule": "While a passage uses a given species, that species' rules apply, including when entering and leaving it.",
+      "sources": [
+        "magnuson"
+      ]
+    },
+    {
+      "id": "s5-run-limits",
+      "species": [
+        5
+      ],
+      "category": "rhythm",
+      "strength": "preferred",
+      "rule": "Keep runs short: whole notes only in the last bar, no more than three half notes in succession, no more than eight quarters, and no more than two tied pairs.",
+      "sources": [
+        "magnuson"
+      ],
+      "variants": [
+        {
+          "source": "cmu-s5",
+          "says": "Stays in one note value for no more than two bars."
+        }
+      ]
+    },
+    {
+      "id": "s5-strong-beat-weight",
+      "species": [
+        5
+      ],
+      "category": "rhythm",
+      "strength": "required",
+      "rule": "Place longer values on stronger beats; a quarter note is never tied to a following half note.",
+      "sources": [
+        "magnuson",
+        "cmu-s5"
+      ]
+    },
+    {
+      "id": "s5-eighths",
+      "species": [
+        5
+      ],
+      "category": "ornament",
+      "strength": "required",
+      "rule": "Eighth notes come in stepwise pairs, approached and left by step, on a weak quarter (the second or fourth quarter of the bar), at most one pair per bar.",
+      "sources": [
+        "omt2-s5",
+        "magnuson",
+        "cmu-s5"
+      ],
+      "variants": [
+        {
+          "source": "cmu-s5",
+          "says": "Eighths may sit on the second or the fourth quarter, but not both in one bar."
+        }
+      ]
+    },
+    {
+      "id": "s5-decorated-suspensions",
+      "species": [
+        5
+      ],
+      "category": "suspension",
+      "strength": "preferred",
+      "rule": "Decorate most suspension resolutions (for example with an anticipation or a turn); the decorating note is consonant, and the same decoration should not be used twice in a row.",
+      "sources": [
+        "omt2-s5",
+        "cmu-s5"
+      ]
+    },
+    {
+      "id": "s5-rhythmic-flow",
+      "species": [
+        5
+      ],
+      "category": "rhythm",
+      "strength": "preferred",
+      "rule": "Begin slowly with longer values and stepwise motion, then accelerate toward the climax; avoid rhythmic patterns that chop the line into segments.",
+      "sources": [
+        "cmu-s5"
+      ]
+    },
+    {
+      "id": "s5-begin",
+      "species": [
+        5
+      ],
+      "category": "beginning",
+      "strength": "preferred",
+      "rule": "Begin with a perfect consonance, preferably after a rest in second- or fourth-species rhythm.",
+      "sources": [
+        "omt2-s5",
+        "cmu-s5"
+      ]
+    },
+    {
+      "id": "s5-cadence",
+      "species": [
+        5
+      ],
+      "category": "ending",
+      "strength": "required",
+      "rule": "End with a clausula vera, usually as a fourth-species suspension cadence with a decorated resolution.",
+      "sources": [
+        "omt2-s5",
+        "magnuson",
+        "cmu-s5"
+      ]
+    }
+  ]
+}

@@ -128,6 +128,10 @@ The adapter is intentionally small and uses the standard library. Its duration/b
 
 The supplied *Voice Leading Rules Summary - Extended* is visually indexed and searchable on the user's computer, but its PDF, page images and full index are not published: the repository keeps only `public-catalog.json`, with page and figure citations for the paradigms the reviewer recognizes. See [docs/REFERENCE_LIBRARY.md](docs/REFERENCE_LIBRARY.md). With the local files present, search paradigms with `python -m coach.reference "BACH"` or `python -m coach.reference "lament"`. Source conventions beyond the checker's domain are explicitly marked as reference guidance.
 
+## Species counterpoint rules
+
+[docs/SPECIES_COUNTERPOINT.md](docs/SPECIES_COUNTERPOINT.md) collects the rules of strict two-voice species counterpoint (cantus firmus and first through fifth species), each with a strength level, sources and the points where textbooks disagree. The data is [references/species-counterpoint/rules.json](references/species-counterpoint/rules.json), which ships with the web interface. Search it with `python -m coach.reference cambiata` or list a species with `python -m coach.reference --species 4`. The checker does not test species exercises yet.
+
 ## Extended review of two-staff chord scores
 
 When four aligned pitches are written as chords on two staves, and you explicitly want voices assigned bottom-up at every sonority, use the extended reviewer. It accepts `.mxl` as well as uncompressed MusicXML and reviews longer 4/4 major-key passages:
