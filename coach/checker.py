@@ -126,6 +126,9 @@ def check(score, assignment, enforce_length=True):
                     target = new[voice]
                     if target.pitch == note.pitch:
                         continue  # Retention needs later harmonic context.
+                    if (old_chord.get("roman") == "V4/3" and new_chord.get("roman") == "I6" and voice == "S"
+                            and target.pitch.diatonic - note.pitch.diatonic == 1):
+                        continue  # Parallel 10ths (reference p. 12, fig. 10): the soprano seventh rises with the bass.
                     if not (note.pitch.diatonic - target.pitch.diatonic == 1 and note.pitch.midi - target.pitch.midi in (1, 2)):
                         add("seventh_resolution", [note, target], "The identified chordal seventh does not descend by step; review the harmonic context.", "suggestion", time)
         # Do not connect notes across a gap in either voice.

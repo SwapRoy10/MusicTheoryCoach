@@ -28,11 +28,11 @@ Local option at m. 4, beat 3: change alto E4 to D4 if V4/3 and the source passin
 
 
 
-Voice exchange with skips ascending bass: m. 1 b. 1 to m. 2 b. 1: Variant of Voice exchange with skips ascending bass; bass degrees [1, 4, 3], soprano degrees [3, 7, 1]. The starred source requires soprano [3, 1, 1]; this realization does not match it. Reference printed p. 12, figure 12a.
+Voice exchange with skips ascending bass: m. 1 b. 1 to m. 2 b. 1: Matches the harmonic/bass scheme of Voice exchange with skips ascending bass; bass degrees [1, 4, 3], soprano degrees [3, 7, 1]. Reference printed p. 12, figure 12a.
 
 Upper neighbor with V4/2: m. 2 b. 1 to m. 3 b. 1: Matches the harmonic/bass scheme of Upper neighbor with V4/2; bass degrees [3, 4, 3], soprano degrees [1, 7, 1]. Reference printed p. 12, figure 8.
 
-Voice exchange with skips descending bass: m. 3 b. 1 to m. 4 b. 1: Variant of Voice exchange with skips descending bass; bass degrees [3, 7, 1], soprano degrees [1, 4, 3]. The starred source requires soprano [1, 3, 3]; this realization does not match it. Reference printed p. 12, figure 12b.
+Voice exchange with skips descending bass: m. 3 b. 1 to m. 4 b. 1: Matches the harmonic/bass scheme of Voice exchange with skips descending bass; bass degrees [3, 7, 1], soprano degrees [1, 4, 3]. Reference printed p. 12, figure 12b.
 
 Parallel 10ths: m. 4 b. 1 to m. 5 b. 1: Variant of Parallel 10ths; bass degrees [1, 2, 3], soprano degrees [3, 4, 5]. The middle chord is viiø6/5, not the source's V4/3. Outer thirds are octave-displaced from the source's tenths. Reference printed p. 12, figure 10.
 

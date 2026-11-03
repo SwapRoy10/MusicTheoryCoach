@@ -2,7 +2,7 @@
 // Verovio engraves the reviewed MusicXML, and overlay.js draws the analysis.
 
 import { drawOverlay, ringNotes } from "./overlay.js";
-import { romanHTML, ruleName, withNoteIds, escapeHTML, leadingLocation, VOICE_NAMES } from "./notation.js";
+import { romanHTML, ruleName, withNoteIds, escapeHTML, leadingLocation, VOICE_NAMES, SPECIES_NAMES } from "./notation.js";
 
 const PYODIDE = "https://cdn.jsdelivr.net/npm/pyodide@0.29.5/";
 const VEROVIO = "https://cdn.jsdelivr.net/npm/verovio@6.3.0/dist/";
@@ -11,7 +11,11 @@ const $ = (selector) => document.querySelector(selector);
 const scoreEl = $("#score");
 const panel = $("#panel");
 const statusEl = $("#status");
-const state = { analysis: null, report: "", name: "", filter: "all", pinned: null };
+const state = {
+  analysis: null, report: "", musicxml: "", name: "", filter: "all", pinned: null,
+  mode: "review", composeTab: "species",
+  form: { species: "1", above: "true", source: "generate", mode: "dorian", cantus: "", key: "C", bars: "4" },
+};
 
 // ---------- engines ----------
 
@@ -75,25 +79,44 @@ fetch("examples/index.json").then((r) => r.json()).then((examples) => {
   }
 });
 
-$("#download").addEventListener("click", () => {
-  const blob = new Blob([state.report], { type: "text/markdown" });
+function save(text, type, filename) {
   const link = Object.assign(document.createElement("a"), {
-    href: URL.createObjectURL(blob), download: state.name.replace(/\.[^.]+$/, "") + "-review.md" });
+    href: URL.createObjectURL(new Blob([text], { type })), download: filename });
   link.click();
   URL.revokeObjectURL(link.href);
-});
+}
+const baseName = () => state.name.replace(/\.[^.]+$/, "");
+$("#download").addEventListener("click", () => save(state.report, "text/markdown", `${baseName()}-review.md`));
+$("#download-xml").addEventListener("click", () =>
+  save(state.musicxml, "application/vnd.recordare.musicxml+xml", `${baseName()}.musicxml`));
+$("#mode").addEventListener("click", () => setMode(state.mode === "compose" ? "review" : "compose"));
+$("#start-compose").addEventListener("click", () => setMode("compose"));
 
-async function openFile(name, bytesPromise) {
-  setStatus(`Reviewing ${name}…`);
+function setMode(mode) {
+  state.mode = mode;
+  $("#mode").textContent = mode === "compose" ? "Review a score" : "Compose";
+  $("#mode").setAttribute("aria-pressed", String(mode === "compose"));
+  document.body.classList.toggle("composing", mode === "compose");
+  if (state.analysis || mode === "compose") renderPanel();
+  else panel.innerHTML = introHTML;
+  if (mode === "compose") panel.querySelector("form")?.scrollIntoView({ block: "nearest" });
+}
+
+/** Run a bridge call after the status line has painted (composing can take a few seconds). */
+async function run(label, call, name) {
+  setStatus(label);
   document.body.classList.add("busy");
+  await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 30)));
   try {
-    const [bridge, toolkit, bytes] = await Promise.all([pythonReady, verovioReady, bytesPromise]);
-    const reply = JSON.parse(bridge.review_upload(name, new Uint8Array(bytes)));
+    const [bridge, toolkit] = await Promise.all([pythonReady, verovioReady]);
+    const reply = JSON.parse(await call(bridge));
     if (reply.error) {
-      showError(name, reply.error);
+      showError(name, reply.error, reply.kind);
       return;
     }
-    Object.assign(state, { analysis: reply.analysis, report: reply.report, name, pinned: null, filter: "all" });
+    Object.assign(state, { analysis: reply.analysis, report: reply.report, musicxml: reply.musicxml,
+                           composed: Boolean(reply.composed), plan: reply.plan || null,
+                           name, pinned: null, filter: "all" });
     toolkit.loadData(withNoteIds(reply.musicxml));
     state.toolkit = toolkit;
     render();
@@ -107,20 +130,49 @@ async function openFile(name, bytesPromise) {
   }
 }
 
-function showError(name, message) {
+async function openFile(name, bytesPromise) {
+  if (state.mode === "compose") setMode("review");
+  const bytes = await bytesPromise;
+  return run(`Reviewing ${name}…`, (bridge) => bridge.review_upload(name, new Uint8Array(bytes)), name);
+}
+
+function compose() {
+  const f = state.form;
+  const seed = Math.floor(Math.random() * 2 ** 31);
+  if (state.composeTab === "chorale") {
+    const options = { key: f.key, bars: Number(f.bars), seed };
+    return run("Composing a chorale…", (bridge) => bridge.compose_chorale(JSON.stringify(options)),
+      `Chorale in ${f.key} major`);
+  }
+  const species = Number(f.species);
+  const options = { species, above: f.above === "true", mode: f.mode, seed,
+                    cantus: f.source === "mine" ? f.cantus.trim() : null };
+  const side = options.above ? "above" : "below";
+  return run(`Composing ${SPECIES_NAMES[species].toLowerCase()} counterpoint…`,
+    (bridge) => bridge.compose_species(JSON.stringify(options)),
+    `${SPECIES_NAMES[species]} species, ${side} the cantus`);
+}
+
+function showError(name, message, kind) {
   setStatus("");
-  $("#download").hidden = true;
+  $("#download").hidden = $("#download-xml").hidden = true;
   document.body.classList.remove("has-score");
   state.analysis = null;
   scoreEl.querySelector(".engraving")?.remove();
   scoreEl.querySelector(".overlay")?.remove();
-  panel.innerHTML = `
+  const help = state.mode === "compose"
+    ? "Change the settings and try again."
+    : kind === "species"
+      ? `Species exercises need two voices: a cantus firmus in whole notes (one per bar) and a counterpoint,
+         in 4/4 or 2/2 with one key and no pickup measure. Ties are fine; tuplets and grace notes are not.`
+      : `The reviewer reads four-voice chorale exercises (one major key, 4/4 time, four notes sounding together
+         at each chord, no ties, dots, tuplets, grace notes or pickup measure) and two-voice species
+         counterpoint exercises. Export in concert pitch with repeats written out.`;
+  panel.innerHTML = (state.mode === "compose" ? composeHTML() : "") + `
     <div class="problem">
-      <h2>${escapeHTML(name)} could not be reviewed</h2>
+      <h2>${escapeHTML(name)} ${state.mode === "compose" ? "could not be composed" : "could not be reviewed"}</h2>
       <p>${escapeHTML(message)}</p>
-      <p class="quiet">The reviewer currently reads four-voice chorale exercises: one major key, 4/4 time,
-      four notes sounding together at each chord, no ties, dots, tuplets, grace notes or pickup measure.
-      Export in concert pitch with repeats written out.</p>
+      <p class="quiet">${help}</p>
     </div>`;
 }
 
@@ -168,15 +220,167 @@ new ResizeObserver(() => {
 
 // ---------- review panel ----------
 
+const introHTML = panel.innerHTML;
+
 function renderPanel() {
   const a = state.analysis;
+  const form = state.mode === "compose" ? composeHTML() : "";
+  if (!a) {
+    panel.innerHTML = form || introHTML;
+    return;
+  }
+  panel.innerHTML = form + (a.kind === "species" ? speciesHTML(a) : choraleHTML(a));
+  $("#download").hidden = false;
+  $("#download-xml").hidden = false;
+}
+
+// ---------- compose form ----------
+
+const MODES = { dorian: "Dorian (D)", phrygian: "Phrygian (E)", mixolydian: "Mixolydian (G)", aeolian: "Aeolian (A)", ionian: "Ionian (C)" };
+const KEYS = ["C", "G", "D", "A", "E", "F", "Bb", "Eb", "Ab"];
+
+function composeHTML() {
+  const f = state.form;
+  const option = (value, label, current) => `<option value="${value}" ${String(current) === String(value) ? "selected" : ""}>${escapeHTML(label)}</option>`;
+  const tab = (id, label) => `<button type="button" role="tab" data-tab="${id}" aria-selected="${state.composeTab === id}">${label}</button>`;
+  const species = `
+      <label>Species
+        <select name="species">${[1, 2, 3, 4, 5].map((n) => option(n, `${SPECIES_NAMES[n]} species`, f.species)).join("")}</select>
+      </label>
+      <fieldset class="choice"><legend>Counterpoint</legend>
+        <label><input type="radio" name="above" value="true" ${f.above === "true" ? "checked" : ""}> Above the cantus</label>
+        <label><input type="radio" name="above" value="false" ${f.above === "false" ? "checked" : ""}> Below the cantus</label>
+      </fieldset>
+      <fieldset class="choice"><legend>Cantus firmus</legend>
+        <label><input type="radio" name="source" value="generate" ${f.source === "generate" ? "checked" : ""}> Compose one in
+          <select name="mode" aria-label="Mode">${Object.entries(MODES).map(([v, l]) => option(v, l, f.mode)).join("")}</select></label>
+        <label><input type="radio" name="source" value="mine" ${f.source === "mine" ? "checked" : ""}> Use mine</label>
+        <input type="text" name="cantus" value="${escapeHTML(f.cantus)}" placeholder="D4 F4 E4 D4 G4 F4 A4 G4 F4 E4 D4"
+          spellcheck="false" autocomplete="off" aria-label="Your cantus firmus" ${f.source === "mine" ? "" : "hidden"}>
+      </fieldset>
+      <p class="quiet">Every result is checked by the species reviewer before it is shown. Rules and sources:
+        the species counterpoint guide in the reference library.</p>`;
+  const chorale = `
+      <div class="row">
+        <label>Key
+          <select name="key">${KEYS.map((k) => option(k, `${k.replace("b", "♭")} major`, f.key)).join("")}</select></label>
+        <label>Length
+          <select name="bars">${[4, 5, 6, 7, 8].map((n) => option(n, `${n} bars`, f.bars)).join("")}</select></label>
+      </div>
+      <p class="quiet">A new phrase each time: tonic expansions from the reference paradigms, a predominant and an
+        authentic cadence, voiced in SATB and then reviewed by the chorale checker.</p>`;
+  return `
+    <form class="compose" id="compose-form">
+      <h2>Compose</h2>
+      <div class="tabs" role="tablist">${tab("species", "Species counterpoint")}${tab("chorale", "Four-part chorale")}</div>
+      ${state.composeTab === "chorale" ? chorale : species}
+      <button type="submit" class="primary">${state.analysis && state.composed ? "Compose another" : "Compose"}</button>
+    </form>`;
+}
+
+panel.addEventListener("input", (event) => {
+  const { name, value } = event.target;
+  if (!(name in state.form)) return;
+  state.form[name] = value;
+  if (name === "source") {
+    const field = panel.querySelector('input[name="cantus"]');
+    field.hidden = value !== "mine";
+    if (value === "mine") field.focus();
+  }
+  if (name === "cantus" && value.trim()) {
+    state.form.source = "mine";
+    panel.querySelector('input[name="source"][value="mine"]').checked = true;
+  }
+});
+panel.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (state.composeTab === "species" && state.form.source === "mine" && !state.form.cantus.trim()) {
+    panel.querySelector('input[name="cantus"]').focus();
+    return;
+  }
+  compose();
+});
+panel.addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-tab]");
+  if (!tab) return;
+  state.composeTab = tab.dataset.tab;
+  renderPanel();
+});
+
+// ---------- review panels ----------
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+function findingsHTML(a, name, where) {
+  return `
+    <section>
+      <div class="findings-head">
+        <h3>${name}</h3>
+        <div class="filter" role="group" aria-label="Show findings">
+          ${["all", "error", "suggestion"].map((f) => `<button type="button" data-filter="${f}" aria-pressed="${state.filter === f}">${{ all: "All", error: "Errors", suggestion: "Suggestions" }[f]}</button>`).join("")}
+        </div>
+      </div>
+      ${a.findings.length ? "" : `<p class="quiet">No problems found under the supported rules.</p>`}
+      <ol class="findings">${a.findings.map((f, i) => `
+        <li class="${f.severity}" ${state.filter !== "all" && state.filter !== f.severity ? "hidden" : ""}>
+          <button type="button" class="item" data-finding="${i}">
+            <span class="badge ${f.severity}" aria-hidden="true">${i + 1}</span>
+            <span class="item-title">${ruleName(f.rule, a.rules)}</span>
+            <span class="where">${where(f)}</span>
+            <span class="body">${prose(f.message)}</span>
+            ${ruleDetail(a, f)}
+            ${f.notes.length ? `<span class="evidence">${f.notes.map((n) => `${n.voice} ${n.pitch} <small>m.${n.measure} b.${n.beat}</small>`).join(", ")}</span>` : ""}
+          </button>
+        </li>`).join("")}</ol>
+    </section>`;
+}
+
+/** Species findings cite the catalog rule, its strength and its sources. */
+function ruleDetail(a, f) {
+  const rule = a.rules?.[f.rule];
+  if (!rule) return "";
+  const sources = rule.sources.map((s) => a.sources[s]).filter(Boolean)
+    .map((s) => `<a href="${escapeHTML(s.url)}" target="_blank" rel="noopener">${escapeHTML(s.work)}</a>`);
+  return `<span class="rule"><span class="strength ${rule.strength}">${rule.strength}</span> ${escapeHTML(rule.rule)}
+    ${sources.length ? `<span class="cite">${[...new Set(sources)].join(" · ")}</span>` : ""}</span>`;
+}
+
+function speciesHTML(a) {
+  const errors = a.findings.filter((f) => f.severity === "error").length;
+  const side = a.above ? "above" : "below";
+  const marks = a.review.marks;
+  return `
+    <header class="panel-head">
+      <h2>${escapeHTML(state.name)}</h2>
+      <p class="tally">
+        <span class="count error">${plural(errors, "error")}</span>
+        <span class="count suggestion">${plural(a.findings.length - errors, "suggestion")}</span>
+        <span class="count paradigm">${plural(marks.length, "figure")}</span>
+      </p>
+      <p class="quiet">${SPECIES_NAMES[a.species]} species, counterpoint ${side} the cantus firmus, ${escapeHTML(a.mode)},
+        ${a.scope.reviewed_measures} bars. The numbers under the score are the intervals between the voices;
+        grey italic ones are dissonances.${a.scope.cantus_assumption ? " " + escapeHTML(a.scope.cantus_assumption) : ""}</p>
+      ${state.composed ? `<p class="composed">Composed here and checked by the same reviewer used for uploads.</p>` : ""}
+    </header>
+    ${findingsHTML(a, "Counterpoint", (f) => f.notes.length ? `m. ${f.measure}, beat ${f.beat}` : "Whole exercise")}
+    <section>
+      <h3>Figures</h3>
+      ${marks.length ? "" : `<p class="quiet">No suspensions or idiomatic figures (cambiata, double neighbor) to point out.</p>`}
+      <ul class="paradigms">${marks.map((m, i) => `
+        <li><button type="button" class="item" data-paradigm="${i}">
+          <span class="item-title">${escapeHTML(m.name)}</span>
+        </button></li>`).join("")}</ul>
+    </section>`;
+}
+
+function choraleHTML(a) {
   const errors = a.findings.filter((f) => f.severity === "error").length;
   const suggestions = a.findings.length - errors;
   const corrected = a.harmony.filter((c) => c.original_label && c.label_matches === false);
-  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
   const extraParadigmNotes = a.review.paradigm_notes.slice(a.paradigms.length);
+  const plan = state.composed && state.plan;
 
-  panel.innerHTML = `
+  return `
     <header class="panel-head">
       <h2>${escapeHTML(state.name)}</h2>
       <p class="tally">
@@ -187,6 +391,8 @@ function renderPanel() {
       <p class="quiet">${a.scope.reviewed_measures} measures, ${a.harmony.length} chords reviewed.
         Blue numerals under each system are the reviewed analysis; red ones differ from what you wrote.
         Voices are assigned from the lowest note up, so crossings can’t be detected.</p>
+      ${plan ? `<p class="composed">Composed here and checked by the same reviewer used for uploads.
+        Progression: ${plan.chords.map((c) => `<span class="rn">${romanHTML(c)}</span>`).join(" ")}</p>` : ""}
     </header>
 
     <section>
@@ -211,26 +417,7 @@ function renderPanel() {
       ${extraParadigmNotes.length ? `<ul class="notes">${extraParadigmNotes.map(noteItem).join("")}</ul>` : ""}
     </section>
 
-    <section>
-      <div class="findings-head">
-        <h3>Voice leading</h3>
-        <div class="filter" role="group" aria-label="Show findings">
-          ${["all", "error", "suggestion"].map((f) => `<button type="button" data-filter="${f}" aria-pressed="${state.filter === f}">${{ all: "All", error: "Errors", suggestion: "Suggestions" }[f]}</button>`).join("")}
-        </div>
-      </div>
-      ${a.findings.length ? "" : `<p class="quiet">No voice-leading problems found under the supported rules.</p>`}
-      <ol class="findings">${a.findings.map((f, i) => `
-        <li class="${f.severity}" ${state.filter !== "all" && state.filter !== f.severity ? "hidden" : ""}>
-          <button type="button" class="item" data-finding="${i}">
-            <span class="badge ${f.severity}" aria-hidden="true">${i + 1}</span>
-            <span class="item-title">${ruleName(f.rule)}</span>
-            <span class="where">m. ${f.measure}, beat ${f.beat}${f.voices.length < 4 ? ", " + f.voices.map((v) => VOICE_NAMES[v] || v).join(" and ") : ""}</span>
-            <span class="body">${prose(f.message)}</span>
-            <span class="evidence">${f.notes.map((n) => `${n.voice} ${n.pitch} <small>m.${n.measure} b.${n.beat}</small>`).join(", ")}</span>
-          </button>
-        </li>`).join("")}</ol>
-    </section>`;
-  $("#download").hidden = false;
+    ${findingsHTML(a, "Voice leading", (f) => `m. ${f.measure}, beat ${f.beat}${f.voices.length < 4 ? ", " + f.voices.map((v) => VOICE_NAMES[v] || v).join(" and ") : ""}`)}`;
 }
 
 /** Escape analyzer prose and typeset the Roman numerals in it with proper figures. */
@@ -253,6 +440,11 @@ function noteItem(text) {
 function notesFor(target) {
   const a = state.analysis;
   if (target.finding !== undefined) return a.findings[target.finding].notes.map((n) => n.id);
+  if (target.paradigm !== undefined && a.kind === "species") {
+    const m = a.review.marks[target.paradigm];
+    const ids = a.harmony.map((c) => c.notes.CP.id);
+    return ids.slice(ids.indexOf(m.anchor), ids.indexOf(m.end_anchor) + 1);
+  }
   if (target.paradigm !== undefined) {
     const p = a.paradigms[target.paradigm];
     const order = (c) => Number(c.offset);
@@ -305,6 +497,7 @@ function targetFrom(el) {
 
 document.addEventListener("click", (event) => {
   if (!state.analysis) return;
+  if (event.target.closest("a[href]")) return;
   const filter = event.target.closest("[data-filter]");
   if (filter) {
     state.filter = filter.dataset.filter;

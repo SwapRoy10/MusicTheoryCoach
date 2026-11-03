@@ -29,6 +29,8 @@ EXAMPLES = [
     ("Parallel fifths exercise", ROOT / "examples/deliberate-errors.musicxml"),
     ("ii6/5 progression", ROOT / "examples/varied-example.musicxml"),
     ("Clean progression", ROOT / "examples/valid.musicxml"),
+    ("First species (Fux)", ROOT / "examples/species/first-species-fux.musicxml"),
+    ("Second species with mistakes", ROOT / "examples/species/second-species-errors.musicxml"),
 ]
 
 

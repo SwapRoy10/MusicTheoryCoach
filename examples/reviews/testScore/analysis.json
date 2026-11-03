@@ -1733,7 +1733,7 @@
     },
     {
       "degree": 7,
-      "symbol": "viiø",
+      "symbol": "vii\u00f8",
       "pitches": [
         "F#",
         "A",
@@ -1741,7 +1741,7 @@
         "E"
       ],
       "size": 4,
-      "roman": "viiø6/5",
+      "roman": "vii\u00f86/5",
       "status": "identified",
       "bass": "A",
       "inversion": 1,
@@ -1977,7 +1977,7 @@
     },
     {
       "degree": 7,
-      "symbol": "viiø",
+      "symbol": "vii\u00f8",
       "pitches": [
         "F#",
         "A",
@@ -1985,7 +1985,7 @@
         "E"
       ],
       "size": 4,
-      "roman": "viiø7",
+      "roman": "vii\u00f87",
       "status": "interpreted",
       "bass": "F#",
       "inversion": 0,
@@ -2522,14 +2522,14 @@
     },
     {
       "degree": 7,
-      "symbol": "vii°",
+      "symbol": "vii\u00b0",
       "pitches": [
         "F#",
         "A",
         "C"
       ],
       "size": 3,
-      "roman": "vii°6/4",
+      "roman": "vii\u00b06/4",
       "status": "identified",
       "bass": "C",
       "inversion": 2,
@@ -2857,7 +2857,7 @@
           "midi": 72
         }
       ],
-      "message": "Your label V43 differs from viiø6/5. Exact match to the complete spelled pitch set."
+      "message": "Your label V43 differs from vii\u00f86/5. Exact match to the complete spelled pitch set."
     },
     {
       "rule": "incomplete_seventh",
@@ -3071,7 +3071,7 @@
           "midi": 81
         }
       ],
-      "message": "Interpreted as viiø7: C (the fifth) is absent. An omitted fifth can be legitimate; this is a contextual interpretation."
+      "message": "Interpreted as vii\u00f87: C (the fifth) is absent. An omitted fifth can be legitimate; this is a contextual interpretation."
     },
     {
       "rule": "range",
@@ -3143,7 +3143,7 @@
           "midi": 81
         }
       ],
-      "message": "Your label viio7 differs from viiø7. Root, third and seventh are present; fifth is omitted. Contextual interpretation."
+      "message": "Your label viio7 differs from vii\u00f87. Root, third and seventh are present; fifth is omitted. Contextual interpretation."
     },
     {
       "rule": "seventh_resolution",
@@ -3611,14 +3611,14 @@
         "measure": "2",
         "beat": "1"
       },
-      "status": "variant",
-      "description": "Variant of Voice exchange with skips ascending bass; bass degrees [1, 4, 3], soprano degrees [3, 7, 1]. The starred source requires soprano [3, 1, 1]; this realization does not match it.",
+      "name": "Voice exchange with skips ascending bass",
+      "status": "scheme_match",
+      "description": "Matches the harmonic/bass scheme of Voice exchange with skips ascending bass; bass degrees [1, 4, 3], soprano degrees [3, 7, 1].",
       "source_pdf_page": 1,
       "source_printed_page": 12,
       "source_figure": "12a",
       "source_pattern_id": "pattern-13",
-      "anchor": "n2",
-      "name": "Voice exchange with skips ascending bass"
+      "anchor": "n2"
     },
     {
       "id": "P2",
@@ -3630,14 +3630,14 @@
         "measure": "3",
         "beat": "1"
       },
+      "name": "Upper neighbor with V4/2",
       "status": "scheme_match",
       "description": "Matches the harmonic/bass scheme of Upper neighbor with V4/2; bass degrees [3, 4, 3], soprano degrees [1, 7, 1].",
       "source_pdf_page": 1,
       "source_printed_page": 12,
       "source_figure": "8",
       "source_pattern_id": "pattern-08",
-      "anchor": "n6",
-      "name": "Upper neighbor with V4/2"
+      "anchor": "n6"
     },
     {
       "id": "P3",
@@ -3649,14 +3649,14 @@
         "measure": "4",
         "beat": "1"
       },
-      "status": "variant",
-      "description": "Variant of Voice exchange with skips descending bass; bass degrees [3, 7, 1], soprano degrees [1, 4, 3]. The starred source requires soprano [1, 3, 3]; this realization does not match it.",
+      "name": "Voice exchange with skips descending bass",
+      "status": "scheme_match",
+      "description": "Matches the harmonic/bass scheme of Voice exchange with skips descending bass; bass degrees [3, 7, 1], soprano degrees [1, 4, 3].",
       "source_pdf_page": 1,
       "source_printed_page": 12,
       "source_figure": "12b",
       "source_pattern_id": "pattern-14",
-      "anchor": "n10",
-      "name": "Voice exchange with skips descending bass"
+      "anchor": "n10"
     },
     {
       "id": "P4",
@@ -3668,14 +3668,14 @@
         "measure": "5",
         "beat": "1"
       },
+      "name": "Parallel 10ths",
       "status": "variant",
-      "description": "Variant of Parallel 10ths; bass degrees [1, 2, 3], soprano degrees [3, 4, 5]. The middle chord is viiø6/5, not the source's V4/3. Outer thirds are octave-displaced from the source's tenths.",
+      "description": "Variant of Parallel 10ths; bass degrees [1, 2, 3], soprano degrees [3, 4, 5]. The middle chord is vii\u00f86/5, not the source's V4/3. Outer thirds are octave-displaced from the source's tenths.",
       "source_pdf_page": 1,
       "source_printed_page": 12,
       "source_figure": "10",
       "source_pattern_id": "pattern-11",
-      "anchor": "n14",
-      "name": "Parallel 10ths"
+      "anchor": "n14"
     },
     {
       "id": "P5",
@@ -3687,20 +3687,21 @@
         "measure": "10",
         "beat": "3"
       },
+      "name": "Lower neighbor with V6/5",
       "status": "scheme_match",
       "description": "Matches the harmonic/bass scheme of Lower neighbor with V6/5; bass degrees [1, 7, 1], soprano degrees [3, 4, 3]. The middle seventh chord omits its fifth, so the voicing differs from the source diagram.",
       "source_pdf_page": 1,
       "source_printed_page": 12,
       "source_figure": "5",
       "source_pattern_id": "pattern-05",
-      "anchor": "n34",
-      "name": "Lower neighbor with V6/5"
+      "anchor": "n34"
     }
   ],
   "local_proposals": [
     "Local option at m. 4, beat 3: change alto E4 to D4 if V4/3 and the source passing-bass paradigm were intended. This restores V4/3 and removes 1 supported voice-leading error(s), with no newly detected hard-rule errors in a full recheck. Other score issues remain; this is not a certified full revision."
   ],
   "review": {
+    "input_name": "testScore.mxl",
     "harmony": [
       {
         "degree": 1,
@@ -4120,7 +4121,7 @@
       },
       {
         "degree": 7,
-        "symbol": "viiø",
+        "symbol": "vii\u00f8",
         "pitches": [
           "F#",
           "A",
@@ -4128,7 +4129,7 @@
           "E"
         ],
         "size": 4,
-        "roman": "viiø6/5",
+        "roman": "vii\u00f86/5",
         "status": "identified",
         "bass": "A",
         "inversion": 1,
@@ -4364,7 +4365,7 @@
       },
       {
         "degree": 7,
-        "symbol": "viiø",
+        "symbol": "vii\u00f8",
         "pitches": [
           "F#",
           "A",
@@ -4372,7 +4373,7 @@
           "E"
         ],
         "size": 4,
-        "roman": "viiø7",
+        "roman": "vii\u00f87",
         "status": "interpreted",
         "bass": "F#",
         "inversion": 0,
@@ -4909,14 +4910,14 @@
       },
       {
         "degree": 7,
-        "symbol": "vii°",
+        "symbol": "vii\u00b0",
         "pitches": [
           "F#",
           "A",
           "C"
         ],
         "size": 3,
-        "roman": "vii°6/4",
+        "roman": "vii\u00b06/4",
         "status": "identified",
         "bass": "C",
         "inversion": 2,
@@ -5148,24 +5149,27 @@
     "scope_notes": [
       "Reviewed all 13 populated measures in G major, with 24 aligned sonorities. The input contains 32 measures; all-rest trailing measures 14-32 are omitted from this engraving.",
       "Ascending pitch rank at each aligned sonority: B, T, A, S. Crossing cannot be assessed.",
-      "Your original lyrics/numerals are preserved. The additional dark-blue row gives reviewed harmony. Numbered findings and P-labels link to this report.",
+      "Your original lyrics/numerals are preserved. The additional dark-blue row gives reviewed harmony. Numbered findings and named paradigm brackets link to this report.",
       "Checks cover exact parallels, ranges, spacing, overlap, basic tendency-tone advice and numeral comparison. Incomplete sevenths and paradigm variants are explicitly contextual. No corrected score is claimed.",
       "Local option at m. 4, beat 3: change alto E4 to D4 if V4/3 and the source passing-bass paradigm were intended. This restores V4/3 and removes 1 supported voice-leading error(s), with no newly detected hard-rule errors in a full recheck. Other score issues remain; this is not a certified full revision."
     ],
     "label_notes": [
-      "m. 4, beat 3: V43 -> viiø6/5. Exact match to the complete spelled pitch set.",
+      "m. 4, beat 3: V43 -> vii\u00f86/5. Exact match to the complete spelled pitch set.",
       "m. 6, beat 1: vi -> vi7. Root, third and seventh are present; fifth is omitted. Contextual interpretation.",
-      "m. 6, beat 3: viio7 -> viiø7. Root, third and seventh are present; fifth is omitted. Contextual interpretation.",
+      "m. 6, beat 3: viio7 -> vii\u00f87. Root, third and seventh are present; fifth is omitted. Contextual interpretation.",
       "m. 10, beat 1: V65 is defensible as V6/5 with its fifth A omitted.",
       "Other supplied chord labels match the reviewed complete pitch sets or the stated incomplete-chord interpretations.",
       "m. 7, beat 1, HC: A root-position dominant ending supports the marked half cadence.",
       "m. 13, beat 1, PAC: Root-position V-I with tonic in the soprano supports the marked perfect authentic cadence."
     ],
+    "correction_notes": [
+      "Local option at m. 4, beat 3: change alto E4 to D4 if V4/3 and the source passing-bass paradigm were intended. This restores V4/3 and removes 1 supported voice-leading error(s), with no newly detected hard-rule errors in a full recheck. Other score issues remain; this is not a certified full revision."
+    ],
     "paradigm_notes": [
-      "Voice exchange with skips ascending bass: m. 1 b. 1 to m. 2 b. 1: Variant of Voice exchange with skips ascending bass; bass degrees [1, 4, 3], soprano degrees [3, 7, 1]. The starred source requires soprano [3, 1, 1]; this realization does not match it. Reference printed p. 12, figure 12a.",
+      "Voice exchange with skips ascending bass: m. 1 b. 1 to m. 2 b. 1: Matches the harmonic/bass scheme of Voice exchange with skips ascending bass; bass degrees [1, 4, 3], soprano degrees [3, 7, 1]. Reference printed p. 12, figure 12a.",
       "Upper neighbor with V4/2: m. 2 b. 1 to m. 3 b. 1: Matches the harmonic/bass scheme of Upper neighbor with V4/2; bass degrees [3, 4, 3], soprano degrees [1, 7, 1]. Reference printed p. 12, figure 8.",
-      "Voice exchange with skips descending bass: m. 3 b. 1 to m. 4 b. 1: Variant of Voice exchange with skips descending bass; bass degrees [3, 7, 1], soprano degrees [1, 4, 3]. The starred source requires soprano [1, 3, 3]; this realization does not match it. Reference printed p. 12, figure 12b.",
-      "Parallel 10ths: m. 4 b. 1 to m. 5 b. 1: Variant of Parallel 10ths; bass degrees [1, 2, 3], soprano degrees [3, 4, 5]. The middle chord is viiø6/5, not the source's V4/3. Outer thirds are octave-displaced from the source's tenths. Reference printed p. 12, figure 10.",
+      "Voice exchange with skips descending bass: m. 3 b. 1 to m. 4 b. 1: Matches the harmonic/bass scheme of Voice exchange with skips descending bass; bass degrees [3, 7, 1], soprano degrees [1, 4, 3]. Reference printed p. 12, figure 12b.",
+      "Parallel 10ths: m. 4 b. 1 to m. 5 b. 1: Variant of Parallel 10ths; bass degrees [1, 2, 3], soprano degrees [3, 4, 5]. The middle chord is vii\u00f86/5, not the source's V4/3. Outer thirds are octave-displaced from the source's tenths. Reference printed p. 12, figure 10.",
       "Lower neighbor with V6/5: m. 9 b. 3 to m. 10 b. 3: Matches the harmonic/bass scheme of Lower neighbor with V6/5; bass degrees [1, 7, 1], soprano degrees [3, 4, 3]. The middle seventh chord omits its fifth, so the voicing differs from the source diagram. Reference printed p. 12, figure 5.",
       "m. 8 beat 1 to m. 9 beat 3: iii-IV-I6/4-I resembles the iii-to-IV connection in printed p. 14, figure 9, but lacks its opening I and adds I6/4. It is a fragment/variant, not a full source match.",
       "m. 9 beat 1: I6/4 is correctly spelled, but this is not the standard cadential 6/4-to-V over a held dominant bass. Review the intended tonic-expansion function.",
@@ -5202,10 +5206,6 @@
         "label": "Lower neighbor\nV6/5",
         "name": "Lower neighbor with V6/5"
       }
-    ],
-    "input_name": "testScore.mxl",
-    "correction_notes": [
-      "Local option at m. 4, beat 3: change alto E4 to D4 if V4/3 and the source passing-bass paradigm were intended. This restores V4/3 and removes 1 supported voice-leading error(s), with no newly detected hard-rule errors in a full recheck. Other score issues remain; this is not a certified full revision."
     ]
   }
 }

@@ -46,7 +46,8 @@ export function drawOverlay(container, analysis, findingNumbers) {
     el.type = "button";
     el.className = "numeral";
     if (chord.original_label && chord.label_matches === false) el.classList.add("corrected");
-    if (chord.status !== "identified") el.classList.add(chord.status === "interpreted" ? "interpreted" : "uncertain");
+    if (chord.status !== "identified") el.classList.add({ interpreted: "interpreted", dissonant: "dissonant" }[chord.status] || "uncertain");
+    if (analysis.kind === "species") el.classList.add("interval");
     el.innerHTML = romanHTML(chord.roman);
     el.style.left = `${head.cx}px`;
     el.style.top = `${full.bottom + 8}px`;

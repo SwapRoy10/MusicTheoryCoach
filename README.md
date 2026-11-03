@@ -1,6 +1,6 @@
 # Music Theory Coach
 
-**Try it online: [musictheorycoach.netlify.app](https://musictheorycoach.netlify.app/)** — upload a MusicXML chorale exercise and see the review marked on the score. Scores are analyzed in your browser and never uploaded.
+**Try it online: [musictheorycoach.netlify.app](https://musictheorycoach.netlify.app/)** — upload a MusicXML chorale or species counterpoint exercise and see the review marked on the score, or have it compose a new exercise. Scores are analyzed in your browser and never uploaded.
 
 A local first-milestone prototype for short SATB MusicXML exercises. It extracts a spelling-preserving timeline, reports supported voice-leading problems with note-level evidence, and searches for single-note repairs that pass a full recheck. Exported repairs are read back and checked again.
 
@@ -16,7 +16,21 @@ The analysis is this repository's own Python package running in the page through
 python web/build.py --serve     # then open http://localhost:8000
 ```
 
-`build.py` assembles `site/` (ignored by git) from `web/`, `coach/`, the public reference catalog (paradigm citations only) and four examples. `netlify.toml` runs the same build for deployment. The page uses the `coach.review` pipeline, so it accepts the same scores (see [Extended review](#extended-review-of-two-staff-chord-scores)). Pyodide and Verovio load from the jsDelivr CDN, so the first visit downloads roughly 15 MB.
+`build.py` assembles `site/` (ignored by git) from `web/`, `coach/`, the public reference catalog (paradigm citations only), the species rules and six examples. `netlify.toml` runs the same build for deployment. The page uses the `coach.review` pipeline, so it accepts the same scores (see [Extended review](#extended-review-of-two-staff-chord-scores)). Pyodide and Verovio load from the jsDelivr CDN, so the first visit downloads roughly 15 MB.
+
+### Species counterpoint and composing
+
+Uploads with exactly two voices are reviewed as species counterpoint (`coach/counterpoint.py`): the cantus firmus is the voice in whole notes, the species (first through fifth) is detected from the counterpoint's rhythm, and every finding cites its rule, strength and sources in [`references/species-counterpoint/rules.json`](docs/SPECIES_COUNTERPOINT.md). Intervals between the voices appear under the score, and suspensions, cambiatas and double neighbors are bracketed.
+
+The **Compose** button writes new exercises, and nothing is shown unless it passes the same reviewer used for uploads:
+
+- `coach/compose_species.py` composes a cantus firmus in a chosen mode (or takes yours, e.g. `D4 F4 E4 D4 G4 F4 A4 G4 F4 E4 D4`) and a counterpoint in any species, above or below. A pruned depth-first search with restarts follows the required rules, bends "avoid" rules only when it must, and keeps the result with the fewest suggestions.
+- `coach/compose_chorale.py` composes an SATB phrase of four to eight bars in a major key. The progression joins tonic expansions from the reference paradigms (page 12, with their required soprano lines) to a predominant and an authentic cadence. A beam search voices it, and `coach.review.run_review` checks the exported MusicXML.
+
+```sh
+python -c "from coach.compose_species import compose_species; print(compose_species(4, 'dorian', above=False)[0])" > fourth.musicxml
+python -c "from coach.compose_chorale import compose_chorale; print(compose_chorale('G', 6)[0])" > chorale.musicxml
+```
 
 ## Set up a fresh checkout
 

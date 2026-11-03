@@ -44,13 +44,22 @@ const RULES = {
   measure_duration: "Measure duration",
 };
 
+// Species rule IDs read "s4-cadence", "mel-leap-recovery", "comb-no-parallel-perfect", ...
+const SPECIES_PREFIX = /^(s[1-5]|comb|mel|cf)-/;
+const SPECIES_GROUP = { cf: "Cantus", mel: "Melody", comb: "Two voices" };
+
 export function ruleName(rule) {
   if (RULES[rule]) return RULES[rule];
-  const text = String(rule).replace(/_/g, " ");
-  return text.charAt(0).toUpperCase() + text.slice(1);
+  const prefix = SPECIES_PREFIX.exec(rule);
+  const text = String(rule).replace(SPECIES_PREFIX, "").replace(/[_-]/g, " ");
+  const name = text.charAt(0).toUpperCase() + text.slice(1);
+  if (!prefix) return name;
+  const group = SPECIES_GROUP[prefix[1]] || `${SPECIES_NAMES[prefix[1][1]]} species`;
+  return `${name} <span class="group">${group}</span>`;
 }
 
-export const VOICE_NAMES = { S: "Soprano", A: "Alto", T: "Tenor", B: "Bass" };
+export const VOICE_NAMES = { S: "Soprano", A: "Alto", T: "Tenor", B: "Bass", CP: "Counterpoint", CF: "Cantus firmus" };
+export const SPECIES_NAMES = { 1: "First", 2: "Second", 3: "Third", 4: "Fourth", 5: "Fifth" };
 
 /**
  * Give every <note> element the ID the analyzer uses for it.
