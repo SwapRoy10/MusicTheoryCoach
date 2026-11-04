@@ -160,7 +160,11 @@ def check(score, assignment, enforce_length=True):
         notes = sorted((n for n in score.notes if n.voice == voice), key=lambda n: n.start)
         for a, b in zip(notes, notes[1:]):
             if a.end == b.start and a.pitch.midi % 12 == (tonic_pc - 1) % 12 and a.pitch != b.pitch:
-                if b.pitch.midi != a.pitch.midi + 1:
+                last = b.end == max(n.end for n in score.notes)
+                frustrated = (voice in ("A", "T") and last and a.pitch.midi - b.pitch.midi in (3, 4)
+                              and (b.pitch.midi - tonic_pc) % 12 == 7)
+                if b.pitch.midi != a.pitch.midi + 1 and not frustrated:
+                    # (An inner voice may drop to the fifth of the final tonic so the chord is complete.)
                     add("leading_tone", [a, b], "The leading tone does not rise a semitone; check harmonic context and inner-voice exceptions.", "suggestion")
     if assignment["require_tonic_ending"] and frames:
         final = frames[-1][1]

@@ -16,7 +16,7 @@ The analysis is this repository's own Python package running in the page through
 python web/build.py --serve     # then open http://localhost:8000
 ```
 
-`build.py` assembles `site/` (ignored by git) from `web/`, `coach/`, the public reference catalog (paradigm citations only), the species rules and six examples. `netlify.toml` runs the same build for deployment. The page uses the `coach.review` pipeline, so it accepts the same scores (see [Extended review](#extended-review-of-two-staff-chord-scores)). Pyodide and Verovio load from the jsDelivr CDN, so the first visit downloads roughly 15 MB.
+`build.py` assembles `site/` (ignored by git) from `web/`, `coach/`, the public reference catalog (paradigm citations only), the species rules and seven examples. `netlify.toml` runs the same build for deployment. The page uses the `coach.review` pipeline, so it accepts the same scores (see [Extended review](#extended-review-of-two-staff-chord-scores)). Pyodide and Verovio load from the jsDelivr CDN, so the first visit downloads roughly 15 MB.
 
 ### Species counterpoint and composing
 
@@ -26,6 +26,10 @@ The **Compose** button writes new exercises, and nothing is shown unless it pass
 
 - `coach/compose_species.py` composes a cantus firmus in a chosen mode (or takes yours, e.g. `D4 F4 E4 D4 G4 F4 A4 G4 F4 E4 D4`) and a counterpoint in any species, above or below. A pruned depth-first search with restarts follows the required rules, bends "avoid" rules only when it must, and keeps the result with the fewest suggestions.
 - `coach/compose_chorale.py` composes an SATB phrase of four to eight bars in a major key. The progression joins tonic expansions from the reference paradigms (page 12, with their required soprano lines) to a predominant and an authentic cadence. A beam search voices it, and `coach.review.run_review` checks the exported MusicXML.
+
+- `coach/harmonize.py` completes an exercise: given a soprano melody or a bass line (typed, or a one-line MusicXML upload), it chooses a Roman numeral for each note with a small tonic–predominant–dominant grammar and writes the other three voices. It searches every chord-and-voicing combination by dynamic programming, then checks the result with the chorale reviewer.
+
+On any reviewed score, **Play** sounds the music with the notes lit as they sound (a Web Audio synth driven by Verovio's timemap, in `web/player.js`). **Hear it** plays just a finding's chords. **Suggest a fix** lists single-note changes from `coach/fixes.py` that remove the error without creating a new one, each confirmed by rerunning the checker. A fix can be applied and undone, and the edited MusicXML downloaded.
 
 ```sh
 python -c "from coach.compose_species import compose_species; print(compose_species(4, 'dorian', above=False)[0])" > fourth.musicxml

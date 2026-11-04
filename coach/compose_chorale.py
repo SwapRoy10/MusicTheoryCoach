@@ -107,7 +107,8 @@ def pitches_named(names, low, high, fifths):
     return out
 
 
-def voicings(label, fifths, final=False):
+def voicings(label, fifths, final=False, unison=False):
+    """Complete, well-spaced voicings; ``unison`` lets the alto and tenor share a note."""
     names, bass_name = chord_members(label, fifths)
     _, size, inversion = parse_roman(label)
     tonic_pc = (7 * fifths) % 12
@@ -119,7 +120,7 @@ def voicings(label, fifths, final=False):
             if t.midi <= b.midi:
                 continue
             for a in upper["A"]:
-                if a.midi <= t.midi or a.midi - t.midi > 12:
+                if a.midi < t.midi or (a.midi == t.midi and not unison) or a.midi - t.midi > 12:
                     continue
                 for s in upper["S"]:
                     if s.midi <= a.midi or s.midi - a.midi > 12:
@@ -153,17 +154,27 @@ def degree_of(p, fifths):
 MAX_LEAP = {0: 9, 1: 7, 2: 7, 3: 12}  # S, A, T, B in semitones
 
 
-def transition(old, new, old_label, new_label, fifths):
-    """Cost of moving between two voicings, or None when a rule forbids it."""
+def transition(old, new, old_label, new_label, fifths, frustrated=False, fixed=None):
+    """Cost of moving between two voicings, or None when a rule forbids it.
+
+    ``fixed`` names a voice index whose line is given (harmonization), exempt
+    from the melodic checks. ``frustrated`` permits the inner-voice exception at a final V-I: the leading
+    tone in the alto or tenor may fall a third to the fifth of I, so the tonic is
+    complete (the reviewer still notes it as a suggestion).
+    """
     tonic_pc = (7 * fifths) % 12
     cost = 0.0
     for i in range(4):
+        if i == fixed:
+            continue  # a given line is the student's: its own melody is not ours to judge here
         o, n = old[i], new[i]
         d = n.midi - o.midi
         if abs(d) == 6 or abs(d) in (10, 11) or abs(d) > MAX_LEAP[i]:
             return None
         if o.midi % 12 == (tonic_pc - 1) % 12 and d not in (0, 1):
-            return None  # the leading tone rises to the tonic
+            if not (frustrated and i in (1, 2) and d in (-3, -4) and new_label == "I" and old_label in ("V", "V7")):
+                return None  # the leading tone rises to the tonic
+            cost += 6
         if i == 0:
             cost += abs(d) * 0.9 + (7 if abs(d) > 4 else 2 if abs(d) > 2 else 0) + (4 if d == 0 else 0)
         elif i == 3:

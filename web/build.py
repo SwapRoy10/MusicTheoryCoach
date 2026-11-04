@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "web"
 SITE = ROOT / "site"
 
-PAGE_FILES = ["index.html", "style.css", "app.js", "overlay.js", "notation.js", "logo.svg", "og.png"]
+PAGE_FILES = ["index.html", "style.css", "app.js", "overlay.js", "notation.js", "player.js", "logo.svg", "og.png"]
 # Python files Pyodide loads, keeping the repository layout so
 # coach/reference.py still finds the catalog at ../references/.
 PYTHON_FILES = [WEB / "bridge.py", *sorted((ROOT / "coach").glob("*.py")),
@@ -31,6 +31,7 @@ EXAMPLES = [
     ("Clean progression", ROOT / "examples/valid.musicxml"),
     ("First species (Fux)", ROOT / "examples/species/first-species-fux.musicxml"),
     ("Second species with mistakes", ROOT / "examples/species/second-species-errors.musicxml"),
+    ("Melody to harmonize", ROOT / "examples/harmonize/melody-in-g.musicxml"),
 ]
 
 

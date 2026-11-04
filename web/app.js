@@ -2,6 +2,7 @@
 // Verovio engraves the reviewed MusicXML, and overlay.js draws the analysis.
 
 import { drawOverlay, ringNotes } from "./overlay.js";
+import { Player } from "./player.js";
 import { romanHTML, ruleName, withNoteIds, escapeHTML, leadingLocation, VOICE_NAMES, SPECIES_NAMES } from "./notation.js";
 
 const PYODIDE = "https://cdn.jsdelivr.net/npm/pyodide@0.29.5/";
@@ -14,7 +15,8 @@ const statusEl = $("#status");
 const state = {
   analysis: null, report: "", musicxml: "", name: "", filter: "all", pinned: null,
   mode: "review", composeTab: "species",
-  form: { species: "1", above: "true", source: "generate", mode: "dorian", cantus: "", key: "C", bars: "4" },
+  form: { species: "1", above: "true", source: "generate", mode: "dorian", cantus: "", key: "C", bars: "4",
+          line: "", given: "S", lineKey: "C" },
 };
 
 // ---------- engines ----------
@@ -45,6 +47,14 @@ Promise.all([pythonReady, verovioReady]).then(
   () => setStatus(""),
   (error) => setStatus(`The analyzer could not load: ${error.message}. Check your connection and reload.`, "error"));
 setStatus("Loading the analyzer…");
+
+// ---------- playback ----------
+
+const player = new Player(scoreEl, (playing) => {
+  $("#play").textContent = playing ? "■ Stop" : "▶ Play";
+  $("#play").setAttribute("aria-pressed", String(playing));
+});
+$("#play").addEventListener("click", () => (player.playing ? player.stop() : player.playAll()));
 
 // ---------- input ----------
 
@@ -103,7 +113,7 @@ function setMode(mode) {
 }
 
 /** Run a bridge call after the status line has painted (composing can take a few seconds). */
-async function run(label, call, name) {
+async function run(label, call, name, keep = {}) {
   setStatus(label);
   document.body.classList.add("busy");
   await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 30)));
@@ -114,11 +124,14 @@ async function run(label, call, name) {
       showError(name, reply.error, reply.kind);
       return;
     }
+    player.stop();
     Object.assign(state, { analysis: reply.analysis, report: reply.report, musicxml: reply.musicxml,
                            composed: Boolean(reply.composed), plan: reply.plan || null,
-                           name, pinned: null, filter: "all" });
+                           name, pinned: null, filter: "all", fixes: {}, history: [], edits: [], ...keep });
     toolkit.loadData(withNoteIds(reply.musicxml));
     state.toolkit = toolkit;
+    player.load(toolkit, reply.musicxml);
+    $("#play").hidden = false;
     render();
     renderPanel();
     setStatus("");
@@ -139,6 +152,11 @@ async function openFile(name, bytesPromise) {
 function compose() {
   const f = state.form;
   const seed = Math.floor(Math.random() * 2 ** 31);
+  if (state.composeTab === "harmonize") {
+    const options = { text: f.line, voice: f.given, key: f.lineKey, seed };
+    return run(`Harmonizing your ${f.given === "S" ? "melody" : "bass"}…`, (bridge) => bridge.harmonize(JSON.stringify(options)),
+      `Harmonization in ${f.lineKey} major`);
+  }
   if (state.composeTab === "chorale") {
     const options = { key: f.key, bars: Number(f.bars), seed };
     return run("Composing a chorale…", (bridge) => bridge.compose_chorale(JSON.stringify(options)),
@@ -155,7 +173,8 @@ function compose() {
 
 function showError(name, message, kind) {
   setStatus("");
-  $("#download").hidden = $("#download-xml").hidden = true;
+  $("#download").hidden = $("#download-xml").hidden = $("#play").hidden = true;
+  player.stop();
   document.body.classList.remove("has-score");
   state.analysis = null;
   scoreEl.querySelector(".engraving")?.remove();
@@ -269,11 +288,24 @@ function composeHTML() {
       </div>
       <p class="quiet">A new phrase each time: tonic expansions from the reference paradigms, a predominant and an
         authentic cadence, voiced in SATB and then reviewed by the chorale checker.</p>`;
+  const example = f.given === "S" ? "E5 F5 G5 F5 | E5 D5 C5" : "C3 D3 E3 F3 | G3 G3 C3";
+  const harmonize = `
+      <fieldset class="choice"><legend>Your line is the</legend>
+        <label><input type="radio" name="given" value="S" ${f.given === "S" ? "checked" : ""}> Soprano (harmonize a melody)</label>
+        <label><input type="radio" name="given" value="B" ${f.given === "B" ? "checked" : ""}> Bass (realize a bass line)</label>
+      </fieldset>
+      <label>Notes
+        <textarea name="line" rows="2" spellcheck="false" autocomplete="off" placeholder="${example}">${escapeHTML(f.line)}</textarea></label>
+      <label>Key
+        <select name="lineKey">${KEYS.map((k) => option(k, `${k.replace("b", "♭")} major`, f.lineKey)).join("")}</select></label>
+      <p class="quiet">Half notes, one chord each, ending on a whole-note tonic; bar lines are optional. You can also open a
+        MusicXML file with just one line. The other three voices are written and the whole chorale is checked.</p>`;
+  const panes = { species, chorale, harmonize };
   return `
     <form class="compose" id="compose-form">
       <h2>Compose</h2>
-      <div class="tabs" role="tablist">${tab("species", "Species counterpoint")}${tab("chorale", "Four-part chorale")}</div>
-      ${state.composeTab === "chorale" ? chorale : species}
+      <div class="tabs" role="tablist">${tab("species", "Species")}${tab("chorale", "Chorale")}${tab("harmonize", "Harmonize")}</div>
+      ${panes[state.composeTab]}
       <button type="submit" class="primary">${state.analysis && state.composed ? "Compose another" : "Compose"}</button>
     </form>`;
 }
@@ -282,6 +314,9 @@ panel.addEventListener("input", (event) => {
   const { name, value } = event.target;
   if (!(name in state.form)) return;
   state.form[name] = value;
+  if (name === "given") {
+    panel.querySelector('textarea[name="line"]').placeholder = value === "S" ? "E5 F5 G5 F5 | E5 D5 C5" : "C3 D3 E3 F3 | G3 G3 C3";
+  }
   if (name === "source") {
     const field = panel.querySelector('input[name="cantus"]');
     field.hidden = value !== "mine";
@@ -294,6 +329,10 @@ panel.addEventListener("input", (event) => {
 });
 panel.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (state.composeTab === "harmonize" && !state.form.line.trim()) {
+    state.form.line = panel.querySelector('textarea[name="line"]').placeholder;
+    panel.querySelector('textarea[name="line"]').value = state.form.line;
+  }
   if (state.composeTab === "species" && state.form.source === "mine" && !state.form.cantus.trim()) {
     panel.querySelector('input[name="cantus"]').focus();
     return;
@@ -331,8 +370,75 @@ function findingsHTML(a, name, where) {
             ${ruleDetail(a, f)}
             ${f.notes.length ? `<span class="evidence">${f.notes.map((n) => `${n.voice} ${n.pitch} <small>m.${n.measure} b.${n.beat}</small>`).join(", ")}</span>` : ""}
           </button>
+          ${f.notes.length ? `<div class="actions">
+            <button type="button" class="link" data-hear="${i}">▶ Hear it</button>
+            ${f.severity === "error" && state.fixes[i] === undefined ? `<button type="button" class="link" data-fixes="${i}">Suggest a fix</button>` : ""}
+          </div>${fixesHTML(i)}` : ""}
         </li>`).join("")}</ol>
     </section>`;
+}
+
+const VOICE_WORD = { S: "soprano", A: "alto", T: "tenor", B: "bass", CP: "counterpoint" };
+
+function fixesHTML(i) {
+  const options = state.fixes[i];
+  if (options === undefined) return "";
+  if (options === "busy") return `<p class="fixes quiet">Searching and rechecking…</p>`;
+  if (!options.length) return `<p class="fixes quiet">No single-note change removes this error without creating another. It needs a larger rewrite.</p>`;
+  return `<ul class="fixes">${options.map((o, k) => `
+    <li><button type="button" class="fix" data-apply="${i}:${k}">
+      <span>Change ${VOICE_WORD[o.voice] || o.voice} <b>${escapeHTML(o.before)}</b> → <b>${escapeHTML(o.after)}</b>
+        <small>m. ${escapeHTML(o.measure)}, beat ${escapeHTML(o.beat)}</small></span>
+      <span class="quiet">Rechecked: ${o.fixed_errors > 1 ? `clears ${o.fixed_errors} errors` : "clears this error"}, no new errors${
+        o.suggestion_change > 0 ? `, ${plural(o.suggestion_change, "new suggestion")}` : o.suggestion_change < 0 ? `, ${plural(-o.suggestion_change, "fewer suggestion")}` : ""}.</span>
+      <span class="apply">Apply</span>
+    </button></li>`).join("")}</ul>`;
+}
+
+async function findFixes(i) {
+  state.fixes[i] = "busy";
+  renderPanel();
+  await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 20)));
+  const bridge = await pythonReady;
+  const reply = JSON.parse(bridge.fixes_for(i));
+  state.fixes[i] = reply.fixes || [];
+  renderPanel();
+  if (state.pinned?.finding !== i) {
+    state.pinned = { finding: i };
+  }
+  highlight(state.pinned, false);
+}
+
+function applyFix(i, k) {
+  const option = state.fixes[i][k];
+  const before = { analysis: state.analysis, report: state.report, musicxml: state.musicxml, composed: state.composed,
+                   plan: state.plan, fixes: state.fixes, edits: state.edits };
+  const history = [...state.history, before];
+  const edits = [...state.edits, `${VOICE_WORD[option.voice] || option.voice} ${option.before} → ${option.after} (m. ${option.measure})`];
+  run(`Applying ${option.before} → ${option.after} and reviewing again…`,
+    (bridge) => bridge.apply_fix(JSON.stringify(option.note_ids || [option.note_id]), option.after),
+    state.name, { history, edits, composed: state.composed, plan: state.plan });
+}
+
+async function undo() {
+  const previous = state.history[state.history.length - 1];
+  if (!previous) return;
+  const bridge = await pythonReady;
+  // Restore the analyzer's copy too, so later fixes apply to the right version.
+  const reply = JSON.parse(bridge.restore(previous.musicxml));
+  if (reply.error) return showError(state.name, reply.error);
+  player.stop();
+  Object.assign(state, previous, { history: state.history.slice(0, -1), pinned: null });
+  state.toolkit.loadData(withNoteIds(state.musicxml));
+  player.load(state.toolkit, state.musicxml);
+  render();
+  renderPanel();
+}
+
+function editsHTML() {
+  if (!state.edits?.length) return "";
+  return `<div class="edits"><p><b>${plural(state.edits.length, "fix")} applied:</b> ${state.edits.map(escapeHTML).join("; ")}.
+    Download the MusicXML to keep this version.</p><button type="button" class="link" data-undo>Undo last fix</button></div>`;
 }
 
 /** Species findings cite the catalog rule, its strength and its sources. */
@@ -361,6 +467,7 @@ function speciesHTML(a) {
         ${a.scope.reviewed_measures} bars. The numbers under the score are the intervals between the voices;
         grey italic ones are dissonances.${a.scope.cantus_assumption ? " " + escapeHTML(a.scope.cantus_assumption) : ""}</p>
       ${state.composed ? `<p class="composed">Composed here and checked by the same reviewer used for uploads.</p>` : ""}
+      ${editsHTML()}
     </header>
     ${findingsHTML(a, "Counterpoint", (f) => f.notes.length ? `m. ${f.measure}, beat ${f.beat}` : "Whole exercise")}
     <section>
@@ -391,8 +498,10 @@ function choraleHTML(a) {
       <p class="quiet">${a.scope.reviewed_measures} measures, ${a.harmony.length} chords reviewed.
         Blue numerals under each system are the reviewed analysis; red ones differ from what you wrote.
         Voices are assigned from the lowest note up, so crossings can’t be detected.</p>
-      ${plan ? `<p class="composed">Composed here and checked by the same reviewer used for uploads.
-        Progression: ${plan.chords.map((c) => `<span class="rn">${romanHTML(c)}</span>`).join(" ")}</p>` : ""}
+      ${plan ? `<p class="composed">${plan.given ? `Your ${plan.given === "S" ? "melody" : "bass"} is kept as written; the other three voices were written here.`
+        : "Composed here."} Checked by the same reviewer used for uploads.
+        Chords: ${plan.chords.map((c) => `<span class="rn">${romanHTML(c)}</span>`).join(" ")}</p>` : ""}
+      ${editsHTML()}
     </header>
 
     <section>
@@ -498,6 +607,20 @@ function targetFrom(el) {
 document.addEventListener("click", (event) => {
   if (!state.analysis) return;
   if (event.target.closest("a[href]")) return;
+  const hear = event.target.closest("[data-hear]");
+  if (hear) {
+    const f = state.analysis.findings[Number(hear.dataset.hear)];
+    player.playNotes(f.notes.map((n) => n.id));
+    return;
+  }
+  const fixes = event.target.closest("[data-fixes]");
+  if (fixes) return findFixes(Number(fixes.dataset.fixes));
+  const apply = event.target.closest("[data-apply]");
+  if (apply) {
+    const [i, k] = apply.dataset.apply.split(":").map(Number);
+    return applyFix(i, k);
+  }
+  if (event.target.closest("[data-undo]")) return undo();
   const filter = event.target.closest("[data-filter]");
   if (filter) {
     state.filter = filter.dataset.filter;
