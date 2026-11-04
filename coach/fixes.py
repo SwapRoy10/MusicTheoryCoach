@@ -38,7 +38,7 @@ def _window(score, first, last):
     """The bars first..last as a score of their own (same note IDs and labels)."""
     notes = tuple(replace(n, measure_index=n.measure_index - first)
                   for n in score.notes if first <= n.measure_index <= last)
-    return Score(notes, score.measures[first:last + 1], score.fifths)
+    return Score(notes, score.measures[first:last + 1], score.fifths, score.mode)
 
 
 def chorale_fixes(score, assignment, finding, limit=3):
@@ -55,10 +55,15 @@ def chorale_fixes(score, assignment, finding, limit=3):
         return []
     old_errors = _errors(before)
     old_suggestions = sum(f["severity"] == "suggestion" for f in before)
-    tonic = (7 * score.fifths) % 12
+    from .harmony import tonic_pc
+    tonic = tonic_pc(score.fifths, score.mode)
     options = []
     for note in notes:
-        for pitch in _pitches_near(note.pitch, score.fifths, *RANGES[note.voice]):
+        extra = ()
+        if score.mode == "minor":  # the raised sixth and seventh
+            from .harmony import degree_pitch
+            extra = tuple(degree_pitch(d, score.fifths, "minor", 1) for d in (6, 7))
+        for pitch in _pitches_near(note.pitch, score.fifths, *RANGES[note.voice], extra=extra):
             candidate = window.change(note.id, pitch)
             after = check(candidate, assignment, enforce_length=False)
             new_errors = _errors(after)

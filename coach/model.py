@@ -68,6 +68,7 @@ class Score:
     notes: tuple[Note, ...]
     measures: tuple[str, ...]
     fifths: int
+    mode: str = "major"
 
     def frames(self, extra_times=()):
         for time in sorted({n.start for n in self.notes} | {n.end for n in self.notes} | set(extra_times)):
@@ -80,7 +81,7 @@ class Score:
                                          for n in self.notes))
 
     def data(self):
-        return {"key_fifths": self.fifths, "mode": "major", "time_signature": "4/4",
+        return {"key_fifths": self.fifths, "mode": self.mode, "time_signature": "4/4",
                 "measures": list(self.measures), "notes": [n.data() for n in self.notes],
                 "timeline": [{"offset": str(t), "notes": {v: n.id for v, n in f.items()}}
                              for t, f in self.frames()]}

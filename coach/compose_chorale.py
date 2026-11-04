@@ -1,4 +1,4 @@
-"""Compose a four-part (SATB) chorale phrase in a major key.
+"""Compose a four-part (SATB) chorale phrase in a major or minor key.
 
 The progression is assembled from the contrapuntal expansions in the classroom
 reference (page 12: neighbor, passing and incomplete-neighbor bass motions with
@@ -7,16 +7,34 @@ A beam search voices the chords under the same rules the chorale checker
 enforces; every candidate is then reviewed by ``coach.review.run_review`` on its
 exported MusicXML, and only phrases with no errors are returned.
 """
-from fractions import Fraction
+from functools import lru_cache
 from pathlib import Path
 import random
 import tempfile
+from typing import NamedTuple
 import xml.etree.ElementTree as ET
 
-from .harmony import vocabulary
+from .harmony import label_for, tonic_pc as key_tonic_pc, tonic_step, vocabulary
 from .model import RANGES, STEPS, Pitch, perfect, scale
 
-KEYS = {"C": 0, "G": 1, "D": 2, "A": 3, "E": 4, "F": -1, "Bb": -2, "Eb": -3, "Ab": -4}
+
+class Key(NamedTuple):
+    fifths: int
+    mode: str = "major"
+
+
+KEYS = {"C": Key(0), "G": Key(1), "D": Key(2), "A": Key(3), "E": Key(4), "F": Key(-1), "Bb": Key(-2), "Eb": Key(-3),
+        "Ab": Key(-4), "Am": Key(0, "minor"), "Em": Key(1, "minor"), "Bm": Key(2, "minor"), "F#m": Key(3, "minor"),
+        "C#m": Key(4, "minor"), "Dm": Key(-1, "minor"), "Gm": Key(-2, "minor"), "Cm": Key(-3, "minor"), "Fm": Key(-4, "minor")}
+
+
+def key_name(name):
+    key = KEYS[name]
+    return f"{name.rstrip('m') if key.mode == 'minor' else name} {key.mode}".replace("b ", "♭ ").replace("#", "♯")
+
+
+def as_key(key):
+    return key if isinstance(key, Key) else Key(key)
 
 # Contrapuntal expansions of the tonic (reference page 12). Each unit continues from
 # the current tonic chord: (figure, name, follows, chords, soprano degrees or None).
@@ -36,7 +54,12 @@ UNITS = [
     ("arp", "Bass arpeggiation", "I6", ["I"], None),
 ]
 PREDOMINANTS = {"I": ["IV", "ii6", "ii6/5"], "I6": ["IV", "ii6", "ii6/5"]}
-FIGURES = {"": 0, "6": 1, "6/4": 2, "7": 0, "6/5": 1, "4/3": 2, "4/2": 3}
+# Chromatic approaches to the cadence: (label, needs the cadential 6/4 after it).
+CHROMATIC_PD = [("N6", False), ("It+6", False), ("Fr+6", False), ("Ger+6", True), ("V6/5/V", False),
+                ("vii°7/V", False), ("V7/V", False)]
+MIXTURE_PD = ["iv6", "iiø6/5", "ii°6"]  # borrowed from the parallel minor (major keys)
+MINOR = {"I": "i", "I6": "i6", "I6/4": "i6/4", "IV": "iv", "IV6": "iv6", "ii": "ii°", "ii6": "ii°6",
+         "ii6/5": "iiø6/5", "ii7": "iiø7", "vi": "VI", "iii": "III"}
 
 
 class ComposeError(ValueError):
@@ -45,26 +68,51 @@ class ComposeError(ValueError):
 
 # ---------------------------------------------------------------- harmony
 
-def parse_roman(label):
-    numeral = label.rstrip("0123456789/").rstrip("°ø")
-    figures = label[len(label.rstrip("0123456789/")):]
-    degree = ["I", "II", "III", "IV", "V", "VI", "VII"].index(numeral.upper()) + 1
-    size = 4 if figures in ("7", "6/5", "4/3", "4/2") else 3
-    return degree, size, FIGURES[figures]
+def localize(label, mode):
+    """A major-key numeral as it reads in ``mode`` (minor: I -> i, ii6 -> ii°6, IV -> iv, ...)."""
+    return MINOR.get(label, label) if mode == "minor" else label
 
 
-def chord_members(label, fifths):
-    degree, size, inversion = parse_roman(label)
-    chord = next(c for c in vocabulary(fifths) if c["degree"] == degree and c["size"] == size)
-    names = chord["pitches"]
-    return names, names[inversion]
+@lru_cache(maxsize=None)
+def chord_info(label, key):
+    """The chord a numeral names in a key: names (root, third, fifth[, seventh]), bass, size, inversion, kind."""
+    key = as_key(key)
+    for chord in vocabulary(key.fifths, key.mode):
+        for inversion in range(len(chord["pitches"]) if chord["kind"] != "aug6" else 1):
+            if label_for(chord, inversion) == label:
+                return {**chord, "names": tuple(chord["pitches"]), "bass": chord["pitches"][inversion],
+                        "inversion": inversion, "label": label}
+    raise ComposeError(f"{label} is not a chord this composer knows in that key.")
 
 
-def progression(bars, rng):
+def chord_members(label, key):
+    info = chord_info(label, as_key(key))
+    return list(info["names"]), info["bass"]
+
+
+def parse_roman(label, key=Key(0)):
+    info = chord_info(label, as_key(key))
+    return info["degree"], info["size"], info["inversion"]
+
+
+def local_leading_tone(info):
+    """The note of an applied chord that leads to its target's root."""
+    if info["kind"] != "applied":
+        return None
+    return info["names"][0] if info["symbol"].startswith("vii") else info["names"][1]
+
+
+def progression(bars, rng, mode="major", chromatic=False):
     """Roman numerals for 2*bars-1 half-note chords (the last one a whole note), plus unit spans."""
     events = 2 * bars - 1
     six_four = rng.random() < 0.6
     cadence = ["I6/4", "V"] if six_four else ["V"]
+    approach = None
+    if chromatic:
+        options = [label for label, needs in CHROMATIC_PD if six_four or not needs]
+        if mode == "major":
+            options += MIXTURE_PD
+        approach = rng.choice(options)
     # The cadential 6/4 falls on a downbeat; otherwise the predominant does.
     middle = events - 1 - 1 - len(cadence) - 1  # opening I, predominant, cadence, final I
     for _ in range(200):
@@ -88,34 +136,39 @@ def progression(bars, rng):
             current, left, last_unit = unit[3][-1], left - len(unit[3]), unit
             fixed = unit[4][-1] if unit[4] else None
         if left == 0:
-            chords.append(rng.choice(PREDOMINANTS[current]))
+            chords.append(approach or rng.choice(PREDOMINANTS[current]))
             chords += cadence + ["I"]
-            return chords, spans
+            return [localize(c, mode) for c in chords], spans
     raise ComposeError("Could not build a progression of that length.")
 
 
 # ---------------------------------------------------------------- voicings
 
-def pitches_named(names, low, high, fifths):
-    alter = scale(fifths)
+def pitches_named(names, low, high, fifths=None):
     out = []
-    for octave in range(1, 7):
-        for step in STEPS:
-            p = Pitch(step, alter[step], octave)
-            if p.name in names and low <= p.midi <= high:
+    for name in set(names):
+        p0 = Pitch.parse(name + "4")
+        for octave in range(1, 7):
+            p = Pitch(p0.step, p0.alter, octave)
+            if low <= p.midi <= high:
                 out.append(p)
-    return out
+    return sorted(out, key=lambda p: p.midi)
 
 
-def voicings(label, fifths, final=False, unison=False):
+@lru_cache(maxsize=None)
+def voicings(label, key, final=False, unison=False):
     """Complete, well-spaced voicings; ``unison`` lets the alto and tenor share a note."""
-    names, bass_name = chord_members(label, fifths)
-    _, size, inversion = parse_roman(label)
-    tonic_pc = (7 * fifths) % 12
+    key = as_key(key)
+    info = chord_info(label, key)
+    names, bass_name, size, inversion = list(info["names"]), info["bass"], info["size"], info["inversion"]
+    leading = (key_tonic_pc(key.fifths, key.mode) - 1) % 12
+    signature = scale(key.fifths)
+    chromatic = {n for n in names if Pitch.parse(n + "4").alter != signature[n[0]]}
+    local_lt = local_leading_tone(info)
     root = names[0]
     out = []
-    upper = {v: pitches_named(names, *RANGES[v], fifths) for v in "TAS"}
-    for b in pitches_named([bass_name], *RANGES["B"], fifths):
+    upper = {v: pitches_named(names, *RANGES[v]) for v in "TAS"}
+    for b in pitches_named([bass_name], *RANGES["B"]):
         for t in upper["T"]:
             if t.midi <= b.midi:
                 continue
@@ -129,40 +182,49 @@ def voicings(label, fifths, final=False, unison=False):
                     present = [p.name for p in chord]
                     if set(present) != set(names):
                         continue  # complete chords only
-                    if sum(p.midi % 12 == (tonic_pc - 1) % 12 for p in chord) > 1:
+                    if sum(p.midi % 12 == leading for p in chord) > 1:
                         continue  # never double the leading tone
                     if size == 3:
                         doubled = next(n for n in names if present.count(n) == 2)
-                        if inversion == 0 and doubled != root:
+                        if doubled in chromatic or doubled == local_lt:
+                            continue  # nor a chromatic note or an applied chord's leading tone
+                        if info["kind"] == "aug6":
+                            if doubled != names[1]:
+                                continue  # the Italian sixth doubles the tonic
+                        elif inversion == 0 and doubled != root:
                             continue
-                        if inversion == 2 and doubled != bass_name:
+                        elif inversion == 2 and doubled != bass_name:
                             continue
-                        if label == "vii°6" and doubled != bass_name:
-                            continue
-                    if final and (s.name != root or label != "I"):
+                        elif inversion == 1 and (info["symbol"].endswith("°") or info["kind"] == "neapolitan") and doubled != bass_name:
+                            continue  # vii°6, ii°6 and N6 double the bass (the chord's third)
+                    if final and (s.name != root or info["degree"] != 1 or inversion != 0):
                         continue
                     out.append(chord)
-    return out
+    return tuple(out)
 
 
-def degree_of(p, fifths):
-    return (STEPS.index(p.step) - (4 * fifths) % 7) % 7 + 1
+def degree_of(p, key):
+    key = as_key(key)
+    return (STEPS.index(p.step) - STEPS.index(tonic_step(key.fifths, key.mode))) % 7 + 1
 
 
 # ---------------------------------------------------------------- voice leading
 
 MAX_LEAP = {0: 9, 1: 7, 2: 7, 3: 12}  # S, A, T, B in semitones
+TONICS = ("I", "i")
+DOMINANTS = ("V", "V7")
 
 
-def transition(old, new, old_label, new_label, fifths, frustrated=False, fixed=None):
+def transition(old, new, old_label, new_label, key, frustrated=False, fixed=None):
     """Cost of moving between two voicings, or None when a rule forbids it.
 
     ``fixed`` names a voice index whose line is given (harmonization), exempt
-    from the melodic checks. ``frustrated`` permits the inner-voice exception at a final V-I: the leading
-    tone in the alto or tenor may fall a third to the fifth of I, so the tonic is
-    complete (the reviewer still notes it as a suggestion).
+    from the melodic checks. ``frustrated`` permits the inner-voice exception at a
+    final V-I: the leading tone in the alto or tenor may fall a third to the fifth
+    of I, so the tonic is complete.
     """
-    tonic_pc = (7 * fifths) % 12
+    key = as_key(key)
+    leading = (key_tonic_pc(key.fifths, key.mode) - 1) % 12
     cost = 0.0
     for i in range(4):
         if i == fixed:
@@ -171,8 +233,10 @@ def transition(old, new, old_label, new_label, fifths, frustrated=False, fixed=N
         d = n.midi - o.midi
         if abs(d) == 6 or abs(d) in (10, 11) or abs(d) > MAX_LEAP[i]:
             return None
-        if o.midi % 12 == (tonic_pc - 1) % 12 and d not in (0, 1):
-            if not (frustrated and i in (1, 2) and d in (-3, -4) and new_label == "I" and old_label in ("V", "V7")):
+        if abs(n.diatonic - o.diatonic) == 1 and abs(d) == 3:
+            return None  # augmented second
+        if o.midi % 12 == leading and d not in (0, 1):
+            if not (frustrated and i in (1, 2) and d in (-3, -4) and new_label in TONICS and old_label in DOMINANTS):
                 return None  # the leading tone rises to the tonic
             cost += 6
         if i == 0:
@@ -181,18 +245,36 @@ def transition(old, new, old_label, new_label, fifths, frustrated=False, fixed=N
             cost += abs(d) * 0.15
         else:
             cost += abs(d) * 0.6 + (2 if abs(d) > 4 else 0)
-    # Chordal sevenths descend by step (or are held), except the rising soprano of the parallel 10ths.
-    _, size, _ = parse_roman(old_label)
-    if size == 4 and old_label != new_label:
-        seventh = chord_members(old_label, fifths)[0][3]
+    info = chord_info(old_label, key)
+    if old_label != new_label:
         for i, o in enumerate(old):
-            if o.name != seventh:
-                continue
             n = new[i]
-            falls = o.diatonic - n.diatonic == 1 and o.midi - n.midi in (1, 2)
-            tenths = old_label == "V4/3" and new_label == "I6" and i == 0 and n.diatonic - o.diatonic == 1
-            if n != o and not falls and not tenths:
+            if i == fixed or n == o:
+                continue
+            step_down = o.diatonic - n.diatonic == 1 and o.midi - n.midi in (1, 2)
+            half_up = n.diatonic - o.diatonic == 1 and n.midi - o.midi == 1
+            # Chordal sevenths descend by step, except the rising soprano of the parallel 10ths.
+            if info["size"] == 4 and info["kind"] != "aug6" and o.name == info["names"][3]:
+                tenths = old_label == "V4/3" and new_label in ("I6", "i6") and i == 0 and n.diatonic - o.diatonic == 1
+                if not step_down and not tenths:
+                    return None
+            # An applied chord's leading tone rises to its target.
+            if o.name == local_leading_tone(info) and not half_up:
                 return None
+            # Augmented sixths expand outward by half step; the Neapolitan's lowered second falls.
+            if info["kind"] == "aug6":
+                if o.name == info["names"][0] and not (o.midi - n.midi == 1):
+                    return None
+                if o.name == info["names"][-1] and not half_up:
+                    return None
+            if info["kind"] == "neapolitan" and o.name == info["names"][0] and n.midi > o.midi:
+                return None
+    # No cross relation: a letter that changes accidental does so within one voice.
+    for i, o in enumerate(old):
+        for j, n in enumerate(new):
+            if i != j and o.step == n.step and o.alter != n.alter and new[i].step != o.step and old[j].step != n.step:
+                if i != fixed and j != fixed:
+                    return None
     for i in range(4):
         for j in range(i + 1, 4):
             a, b = perfect(old[i], old[j]), perfect(new[i], new[j])
@@ -206,18 +288,18 @@ def transition(old, new, old_label, new_label, fifths, frustrated=False, fixed=N
     target = perfect(new[0], new[3])
     if ds * db > 0 and abs(new[0].diatonic - old[0].diatonic) > 1 and target and perfect(old[0], old[3]) != target:
         return None  # direct fifth/octave in the outer voices with a soprano leap
-    if old_label == "I6/4" and new[3] != old[3]:
+    if old_label in ("I6/4", "i6/4") and new[3] != old[3]:
         return None  # the cadential 6/4 keeps its bass
     return cost
 
 
-def voice(chords, fifths, soprano, rng, width=48, cadence=True):
+def voice(chords, key, soprano, rng, width=48, cadence=True):
     """Beam search over voicings. ``soprano`` maps event index to allowed soprano degrees."""
     options = []
     for i, label in enumerate(chords):
-        vs = voicings(label, fifths, final=cadence and i == len(chords) - 1)
+        vs = voicings(label, key, final=cadence and i == len(chords) - 1)
         if i in soprano:
-            vs = [v for v in vs if degree_of(v[0], fifths) in soprano[i]]
+            vs = [v for v in vs if degree_of(v[0], key) in soprano[i]]
         if not vs:
             raise ComposeError(f"No voicing for {label}.")
         options.append(vs)
@@ -227,7 +309,7 @@ def voice(chords, fifths, soprano, rng, width=48, cadence=True):
         for cost, path in beam:
             prev = path[-1]
             for v in options[i]:
-                c = transition(prev, v, chords[i - 1], chords[i], fifths)
+                c = transition(prev, v, chords[i - 1], chords[i], key)
                 if c is None:
                     continue
                 # A soprano leap is recovered by a step the other way.
@@ -245,9 +327,9 @@ def voice(chords, fifths, soprano, rng, width=48, cadence=True):
         # Keep the beam diverse: at most a few paths per final voicing.
         seen, beam = {}, []
         for item in grown:
-            key = item[1][-1]
-            if seen.get(key, 0) < 3:
-                seen[key] = seen.get(key, 0) + 1
+            k = item[1][-1]
+            if seen.get(k, 0) < 3:
+                seen[k] = seen.get(k, 0) + 1
                 beam.append(item)
             if len(beam) >= width:
                 break
@@ -256,7 +338,7 @@ def voice(chords, fifths, soprano, rng, width=48, cadence=True):
 
 # ---------------------------------------------------------------- export
 
-def to_musicxml(path_voicings, chords, fifths, title):
+def to_musicxml(path_voicings, chords, fifths, title, mode="major"):
     """Grand staff: soprano and alto on the treble staff, tenor and bass on the bass staff."""
     root = ET.Element("score-partwise", version="4.0")
     work = ET.SubElement(root, "work")
@@ -274,7 +356,7 @@ def to_musicxml(path_voicings, chords, fifths, title):
             ET.SubElement(attr, "divisions").text = "1"
             key = ET.SubElement(attr, "key")
             ET.SubElement(key, "fifths").text = str(fifths)
-            ET.SubElement(key, "mode").text = "major"
+            ET.SubElement(key, "mode").text = mode
             time = ET.SubElement(attr, "time")
             ET.SubElement(time, "beats").text = "4"
             ET.SubElement(time, "beat-type").text = "4"
@@ -311,46 +393,53 @@ def to_musicxml(path_voicings, chords, fifths, title):
 
 # ---------------------------------------------------------------- entry point
 
-def compose_chorale(key="C", bars=4, seed=None, attempts=40):
+def compose_chorale(key="C", bars=4, seed=None, attempts=40, chromatic=False):
     """Return (musicxml, review, plan) for an original chorale phrase.
 
+    ``key`` is a name from KEYS ("C", "Bb", "Am", "F#m", ...). With ``chromatic``,
+    the cadence is approached by a chromatic chord: an applied dominant of V, the
+    Neapolitan, an augmented sixth, or (in major) a chord borrowed from minor.
     ``review`` is ``coach.review.run_review``'s result on the exported score, so the
     composition is checked exactly as an uploaded exercise would be.
     """
     from .review import run_review
     if key not in KEYS:
-        raise ComposeError(f"Key must be one of {', '.join(KEYS)} major.")
+        raise ComposeError(f"Key must be one of {', '.join(KEYS)}.")
     if not 4 <= bars <= 8:
         raise ComposeError("Choose four to eight bars.")
-    fifths = KEYS[key]
+    k = KEYS[key]
     rng = random.Random(seed)
     best = None
     for _ in range(attempts):
-        chords, spans = progression(bars, rng)
+        chords, spans = progression(bars, rng, k.mode, chromatic)
         soprano = {}
         for start, unit in spans:
             if unit[4]:
                 for offset, deg in enumerate(unit[4]):
                     soprano[start + offset] = {deg}
         soprano[len(chords) - 2] = soprano.get(len(chords) - 2, {2, 7}) & {2, 7} or {2, 7}
-        if chords[-3] == "I6/4":
+        if chords[-3] in ("I6/4", "i6/4"):
             soprano[len(chords) - 3] = {1, 3, 5}
-        path = voice(chords, fifths, soprano, rng)
+        try:
+            path = voice(chords, k, soprano, rng)
+        except ComposeError:
+            continue
         if not path:
             continue
-        title = f"Chorale in {key} major"
-        xml = to_musicxml(path, chords, fifths, title)
+        title = f"Chorale in {key_name(key)}"
+        xml = to_musicxml(path, chords, k.fifths, title, k.mode)
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp) / "chorale.musicxml"
             source.write_text(xml, encoding="utf-8")
             review = run_review(source, Path(tmp) / "out")
-        findings = review["result"]["findings"] if "result" in review else review["findings"]
-        errors = [f for f in findings if f["severity"] == "error"]
-        if errors:
+        findings = review["result"]["findings"]
+        if any(f["severity"] == "error" for f in findings):
             continue
+        if [c["roman"] for c in review["result"]["harmony"]] != chords:
+            continue  # the reviewer must read exactly the chords that were composed
         score = len(findings)
-        plan = {"key": key, "bars": bars, "chords": chords,
-                "expansions": [{"figure": u[0], "name": u[1], "chords": [chords[s]] + u[3], "start": s}
+        plan = {"key": key, "key_name": key_name(key), "mode": k.mode, "bars": bars, "chords": chords,
+                "expansions": [{"figure": u[0], "name": u[1], "chords": [chords[s]] + [localize(c, k.mode) for c in u[3]], "start": s}
                                for s, u in spans if u[0] != "arp"]}
         if best is None or score < best[0]:
             best = (score, xml, review, plan)

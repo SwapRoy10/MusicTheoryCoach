@@ -1,6 +1,6 @@
 # Music Theory Coach
 
-**Try it online: [musictheorycoach.netlify.app](https://musictheorycoach.netlify.app/)** — upload a MusicXML chorale or species counterpoint exercise and see the review marked on the score, or have it compose a new exercise. Scores are analyzed in your browser and never uploaded.
+**Try it online: [musictheorycoach.netlify.app](https://musictheorycoach.netlify.app/)** — upload a MusicXML chorale or species counterpoint exercise and see the review marked on the score, practice by writing on the score in the browser, or have it compose a new exercise. Scores are analyzed in your browser and never uploaded.
 
 A local first-milestone prototype for short SATB MusicXML exercises. It extracts a spelling-preserving timeline, reports supported voice-leading problems with note-level evidence, and searches for single-note repairs that pass a full recheck. Exported repairs are read back and checked again.
 
@@ -28,6 +28,10 @@ The **Compose** button writes new exercises, and nothing is shown unless it pass
 - `coach/compose_chorale.py` composes an SATB phrase of four to eight bars in a major key. The progression joins tonic expansions from the reference paradigms (page 12, with their required soprano lines) to a predominant and an authentic cadence. A beam search voices it, and `coach.review.run_review` checks the exported MusicXML.
 
 - `coach/harmonize.py` completes an exercise: given a soprano melody or a bass line (typed, or a one-line MusicXML upload), it chooses a Roman numeral for each note with a small tonic–predominant–dominant grammar and writes the other three voices. It searches every chord-and-voicing combination by dynamic programming, then checks the result with the chorale reviewer.
+
+**Minor keys and chromatic harmony.** Scores in minor are recognized from the key signature's `<mode>` or, when it is missing, from the final bass. The analyzer names the minor-key chords (harmonic minor for V and vii°), applied dominants and leading-tone chords (`V6/5/V`, `vii°7/V`), mixture in major (`iv6`, `iiø6/5`, `bVI`), the Neapolitan (`N6`) and the Italian, French and German augmented sixths. The checker accepts the notes of these chords, and it suggests how they usually resolve: an applied leading tone rises to its target, the augmented sixth expands to the dominant, and the Neapolitan's lowered second falls. The chorale composer and the harmonizer work in minor keys. With the chromatic option, they approach the cadence with one of these chords, and they harmonize chromatic notes in a given line.
+
+**Practice in the browser.** Practice mode gives an exercise: a cantus firmus (with the counterpoint rhythm given), or the melody or bass of a chorale. The student writes the answer on the engraved score: click a rest, type A–G, use the arrows for steps (Shift for octaves), `#` and `-` for accidentals, or use the on-screen keypad. **Check my work** runs the same reviewer as an upload, fixes can be applied, and a composed solution can be shown. The exercise model and its MusicXML writer are in `web/practice.js`; exercises come from `coach/practice.py`. Work in progress is kept in the browser.
 
 On any reviewed score, **Play** sounds the music with the notes lit as they sound (a Web Audio synth driven by Verovio's timemap, in `web/player.js`). **Hear it** plays just a finding's chords. **Suggest a fix** lists single-note changes from `coach/fixes.py` that remove the error without creating a new one, each confirmed by rerunning the checker. A fix can be applied and undone, and the edited MusicXML downloaded.
 

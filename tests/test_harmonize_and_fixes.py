@@ -50,8 +50,6 @@ class HarmonizeTests(unittest.TestCase):
             harmonize(parse_line("E5 F5 G5 F5 E5 D5 D5"), "S", "C")
         with self.assertRaisesRegex(ComposeError, "odd number"):
             harmonize(parse_line("E5 F5 G5 C5"), "S", "C")
-        with self.assertRaisesRegex(ComposeError, "not in C major"):
-            harmonize(parse_line("E5 F#5 G5 F5 E5 D5 C5"), "S", "C")
         with self.assertRaisesRegex(ComposeError, "range"):
             harmonize(parse_line("E6 F6 G6 F6 E6 D6 C6"), "S", "C")
         with self.assertRaisesRegex(ComposeError, "Write pitches like"):

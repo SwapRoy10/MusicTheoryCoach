@@ -2,7 +2,7 @@ from fractions import Fraction
 from itertools import combinations
 
 from .model import VOICES, RANGES, Pitch, perfect, scale
-from .harmony import identify, vocabulary
+from .harmony import degree_pitch, identify, tonic_pc as key_tonic_pc, vocabulary
 
 
 def constraints_for(score, raw=None):
@@ -82,14 +82,25 @@ def check(score, assignment, enforce_length=True):
                     time=mi * 4, measure=label)
                 findings[-1]["voices"] = [voice]
     key_scale = scale(score.fifths)
+    mode = getattr(score, "mode", "major")
+    key_name = f"{vocabulary(score.fifths, mode)[0]['pitches'][0]} {mode}"
+    # Notes of recognized chromatic chords (and the raised sixth and seventh of minor) belong to the key's vocabulary.
+    chromatic_ok = set()
+    for _, frame in score.frames():
+        chord = identify(frame, score.fifths, mode)
+        if chord["status"] == "identified":
+            chromatic_ok |= {n.id for n in frame.values()}
+    raised = set()
+    if mode == "minor":
+        raised = {Pitch(*degree_pitch(d, score.fifths, mode, 1), 4).name for d in (6, 7)}
     for n in score.notes:
         if n.duration not in (2, 4) or n.beat not in (1, 3) or n.beat + n.duration > 5:
             add("rhythm", [n], "Use half notes on beats 1/3 or a whole note on beat 1.")
         low, high = RANGES[n.voice]
         if not low <= n.pitch.midi <= high:
             add("range", [n], f"{n.voice} {n.pitch} is outside the configured classroom range.")
-        if n.pitch.alter != key_scale[n.pitch.step]:
-            add("diatonic", [n], f"{n.pitch} is outside the declared major-key spelling.")
+        if n.pitch.alter != key_scale[n.pitch.step] and n.id not in chromatic_ok and n.pitch.name not in raised:
+            add("diatonic", [n], f"{n.pitch} is not in {key_name} and is not part of a recognized chromatic chord.")
     frames = list(score.frames(c["offset"] for c in assignment["harmony"]))
     for time, frame in frames:
         for upper, lower in zip(VOICES, VOICES[1:]):
@@ -101,7 +112,7 @@ def check(score, assignment, enforce_length=True):
             if upper != "T" and u.pitch.midi - l.pitch.midi > 12:
                 add("spacing", [u, l], f"{upper} and {lower} are more than an octave apart.", time=time)
         chord = chord_at(assignment, time)
-        actual = identify(frame, score.fifths)
+        actual = identify(frame, score.fifths, mode)
         if actual["status"] == "uncertain":
             add("harmony_uncertain", frame.values(), actual["reason"], "uncertain", time)
         if chord:
@@ -119,8 +130,9 @@ def check(score, assignment, enforce_length=True):
                 if sum(n.pitch.name == chord["bass"] for n in frame.values()) != 2:
                     add("doubling", frame.values(), "Root-position triads usually double the root; review the melodic context.", "suggestion", time)
     for (old_time, old), (time, new) in zip(frames, frames[1:]):
-        old_chord, new_chord = identify(old, score.fifths), identify(new, score.fifths)
-        if old_chord.get("size") == 4 and old_chord.get("pitches") != new_chord.get("pitches"):
+        old_chord, new_chord = identify(old, score.fifths, mode), identify(new, score.fifths, mode)
+        chromatic_tendencies(old_chord, new_chord, old, new, time, add)
+        if old_chord.get("size") == 4 and old_chord.get("kind") != "aug6" and old_chord.get("pitches") != new_chord.get("pitches"):
             for voice, note in old.items():
                 if note.pitch.name == old_chord["pitches"][3] and voice in new and note.end >= time:
                     target = new[voice]
@@ -155,7 +167,7 @@ def check(score, assignment, enforce_length=True):
                     add("direct_outer_interval", [old["S"], old["B"], new["S"], new["B"]],
                         "Similar outer-voice motion enters a perfect interval with a soprano leap.", "suggestion", time)
     # Context-sensitive tendency-tone advice is deliberately not a hard rule.
-    tonic_pc = (7 * score.fifths) % 12
+    tonic_pc = key_tonic_pc(score.fifths, mode)
     for voice in VOICES:
         notes = sorted((n for n in score.notes if n.voice == voice), key=lambda n: n.start)
         for a, b in zip(notes, notes[1:]):
@@ -169,12 +181,54 @@ def check(score, assignment, enforce_length=True):
     if assignment["require_tonic_ending"] and frames:
         final = frames[-1][1]
         # Require root-position tonic with all three members, using declared key spellings.
-        tonic_names = {Pitch(s, a, 4).name for s, a in key_scale.items()
-                       if (Pitch(s, a, 4).midi - tonic_pc) % 12 in (0, 4, 7)}
-        if (set(final) != set(VOICES) or {n.pitch.name for n in final.values()} != tonic_names
+        tonics = [set(c["pitches"]) for c in vocabulary(score.fifths, mode) if c["degree"] == 1 and c["size"] == 3
+                  and c["kind"] in ("diatonic", "mixture") and c["pitches"][0] == vocabulary(score.fifths, mode)[0]["pitches"][0]][:2]
+        if (set(final) != set(VOICES) or {n.pitch.name for n in final.values()} not in tonics
                 or final["B"].pitch.midi % 12 != tonic_pc):
             add("tonic_ending", final.values(), "The assignment requires a complete root-position tonic ending.", time=frames[-1][0])
     return findings
+
+
+def chromatic_tendencies(old_chord, new_chord, old, new, time, add):
+    """Advice on how chromatic chords resolve. Suggestions only: context can justify other motion."""
+    kind = old_chord.get("kind")
+    if old_chord.get("status") != "identified" or kind not in ("applied", "aug6", "neapolitan"):
+        return
+    if old_chord.get("pitches") == new_chord.get("pitches"):
+        return
+    label = old_chord["roman"]
+    moves = {v: (old[v], new[v]) for v in old if v in new}
+    if kind == "applied":
+        root = old_chord["pitches"][0] if old_chord["symbol"].startswith("vii") else old_chord["pitches"][1]
+        target_root = _step_up(old_chord["pitches"][0] if old_chord["symbol"].startswith("vii") else old_chord["pitches"][1])
+        for v, (a, b) in moves.items():
+            if a.pitch.name == root and b.pitch != a.pitch and not (b.pitch.midi - a.pitch.midi == 1 and b.pitch.diatonic - a.pitch.diatonic == 1):
+                add("applied_resolution", [a, b], f"In {label}, {a.pitch} is the leading tone of {old_chord['target']}: it usually rises a half step to {target_root}.", "suggestion", time)
+        if new_chord.get("status") == "identified" and new_chord.get("kind") not in ("applied",):
+            tonicized = new_chord["pitches"][0]
+            if tonicized != target_root and not new_chord.get("roman", "").startswith(("I6/4", "i6/4")):
+                add("applied_resolution", list(new.values()), f"{label} usually moves to {old_chord['target']}; here it moves to {new_chord['roman']}.", "suggestion", time)
+    elif kind == "aug6":
+        flat6, sharp4 = old_chord["pitches"][0], old_chord["pitches"][-1]
+        for v, (a, b) in moves.items():
+            if a.pitch.name == flat6 and b.pitch != a.pitch and a.pitch.midi - b.pitch.midi != 1:
+                add("augmented_sixth", [a, b], f"In the {label}, the lowered sixth {a.pitch} should fall a half step to the dominant.", "suggestion", time)
+            if a.pitch.name == sharp4 and b.pitch != a.pitch and b.pitch.midi - a.pitch.midi != 1:
+                add("augmented_sixth", [a, b], f"In the {label}, the raised fourth {a.pitch} should rise a half step to the dominant.", "suggestion", time)
+    elif kind == "neapolitan":
+        flat2 = old_chord["pitches"][0]
+        for v, (a, b) in moves.items():
+            if a.pitch.name == flat2 and b.pitch.midi > a.pitch.midi:
+                add("neapolitan", [a, b], f"The Neapolitan's lowered second {a.pitch} should move down (to the tonic or leading tone), not up.", "suggestion", time)
+
+
+def _step_up(name):
+    """The pitch name a half step above (letter + 1): the target of a leading tone."""
+    p = Pitch.parse(name + "4")
+    from .model import STEPS
+    step = STEPS[(STEPS.index(p.step) + 1) % 7]
+    natural = Pitch(step, 0, 4 + (1 if p.step == "B" else 0))
+    return Pitch(step, p.midi + 1 - natural.midi, 4).name
 
 
 def errors(findings):

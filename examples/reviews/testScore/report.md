@@ -91,5 +91,3 @@ Other passages were not confidently named from the supplied paradigms. Matching 
 20. SUGGESTION - m. 11, beat 3: The leading tone is doubled; review tendency-tone resolution in these voices.
 
 21. SUGGESTION - m. 12, beat 1: The leading tone does not rise a semitone; check harmonic context and inner-voice exceptions.
-
-22. SUGGESTION - m. 13, beat 1: The leading tone does not rise a semitone; check harmonic context and inner-voice exceptions.

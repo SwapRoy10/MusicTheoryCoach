@@ -38,6 +38,21 @@ def root_from_file(path):
     return root
 
 
+def infer_mode(notes, fifths, declared=()):
+    """Minor if the file says so, or if the final bass is the relative minor's tonic.
+
+    Notation programs often omit <mode> or write "major" for any key signature,
+    so the final bass decides unless minor is declared.
+    """
+    if "minor" in declared:
+        return "minor"
+    if not notes:
+        return "major"
+    end = max(n.start for n in notes)
+    bass = min((n for n in notes if n.start == end), key=lambda n: n.pitch.midi)
+    return "minor" if bass.pitch.midi % 12 == (7 * fifths + 9) % 12 else "major"
+
+
 def read_ranked(path):
     """Return score, original labels and scope; rank only aligned four-note groups.
 
@@ -52,12 +67,13 @@ def read_ranked(path):
     if not measures or None in measures or len(set(measures)) != len(measures):
         raise ValueError("Unique measure labels are required")
     groups = defaultdict(list)
-    keys, supplied = set(), []
+    keys, supplied, modes = set(), [], set()
     source_index = 0
     for part in parts:
         if tuple(m.get("number") for m in part.findall("measure")) != measures:
             raise ValueError("Parts must have matching measure sequences")
         divisions, time, key = None, None, None
+
         for mi, measure in enumerate(part.findall("measure")):
             cursor, chord_start = Fraction(0), None
             if measure.get("implicit") == "yes":
@@ -72,14 +88,17 @@ def read_ranked(path):
                         divisions = int(el.findtext("divisions"))
                     if el.find("key") is not None:
                         key = int(el.findtext("key/fifths"))
-                        if el.findtext("key/mode", "major") != "major" or not -7 <= key <= 7:
-                            raise ValueError("Ranked import currently requires a standard major key")
+                        mode = (el.findtext("key/mode") or "").strip().lower()
+                        if mode not in ("", "major", "minor") or not -7 <= key <= 7:
+                            raise ValueError("Use a standard major or minor key signature")
                         keys.add(key)
+                        if mode:
+                            modes.add(mode)
                     if el.find("time") is not None:
                         time = (el.findtext("time/beats"), el.findtext("time/beat-type"))
                 elif el.tag in ("backup", "forward", "note"):
                     if not divisions or key is None or time != ("4", "4"):
-                        raise ValueError("4/4, major key and positive divisions metadata are required")
+                        raise ValueError("4/4, a key signature and positive divisions metadata are required")
                     duration = Fraction(el.findtext("duration", "0")) / divisions
                     if duration <= 0:
                         raise ValueError("Positive durations are required")
@@ -116,7 +135,7 @@ def read_ranked(path):
                 elif el.tag == "barline" and (el.find("repeat") is not None or el.find("ending") is not None):
                     raise ValueError("Unfold repeats before ranked import")
     if len(keys) != 1 or not groups:
-        raise ValueError("One consistent major key and pitched notes are required")
+        raise ValueError("One consistent key and pitched notes are required")
     last_music = max(mi for mi, _ in groups)
     notes = []
     for (mi, start), group in sorted(groups.items()):
@@ -124,7 +143,8 @@ def read_ranked(path):
             raise ValueError(f"m. {measures[mi]}, beat {start+1}: expected four aligned pitches of equal duration")
         for voice, (note_id, duration, pitch) in zip(("B", "T", "A", "S"), sorted(group, key=lambda n: n[2].midi)):
             notes.append(Note(note_id, voice, measures[mi], mi, start+1, duration, pitch))
-    score = Score(tuple(notes), measures[:last_music+1], keys.pop())
+    fifths = keys.pop()
+    score = Score(tuple(notes), measures[:last_music+1], fifths, infer_mode(notes, fifths, modes))
     for voice in ("S", "A", "T", "B"):
         line = sorted((n for n in notes if n.voice == voice), key=lambda n: n.start)
         if any(a.end > b.start for a, b in zip(line, line[1:])):

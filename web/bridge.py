@@ -164,7 +164,8 @@ def compose_chorale(options="{}"):
     from coach.compose_chorale import ComposeError, compose_chorale as compose
     options = json.loads(options or "{}")
     try:
-        musicxml, reviewed, plan = compose(options.get("key", "C"), int(options.get("bars", 4)), options.get("seed"))
+        musicxml, reviewed, plan = compose(options.get("key", "C"), int(options.get("bars", 4)), options.get("seed"),
+                                           chromatic=bool(options.get("chromatic")))
     except ComposeError as exc:
         return json.dumps({"error": str(exc)})
     work = Path(tempfile.mkdtemp())
@@ -186,7 +187,8 @@ def harmonize(options="{}"):
             line = [Pitch.parse(p) for p in options["pitches"]]
         else:
             line = parse_line(options.get("text", ""))
-        musicxml, reviewed, plan = run(line, options.get("voice", "S"), options.get("key", "C"), options.get("seed"))
+        musicxml, reviewed, plan = run(line, options.get("voice", "S"), options.get("key", "C"), options.get("seed"),
+                                       chromatic=bool(options.get("chromatic")))
     except ComposeError as exc:
         return json.dumps({"error": str(exc), "kind": "line"})
     work = Path(tempfile.mkdtemp())
@@ -194,6 +196,17 @@ def harmonize(options="{}"):
     source.write_text(musicxml, encoding="utf-8")
     reply = _chorale_reply(source, work, {"composed": True, "plan": plan})
     given = {"S": "soprano", "B": "bass"}[plan["given"]]
-    reply["report"] = (f"# Harmonization\n\nGiven {given} in {plan['key']} major. Chords: " + " ".join(plan["chords"])
+    reply["report"] = (f"# Harmonization\n\nGiven {given} in {plan['key_name']}. Chords: " + " ".join(plan["chords"])
                        + "\n\n" + reply["report"])
     return json.dumps(reply, ensure_ascii=False)
+
+
+def practice_new(options="{}"):
+    """A new practice exercise for the page to edit. Options: kind ("species" or "chorale") and its settings."""
+    from coach.compose_chorale import ComposeError
+    from coach.compose_species import SearchFailed
+    from coach.practice import new_exercise
+    try:
+        return json.dumps({"exercise": new_exercise(json.loads(options or "{}"))}, ensure_ascii=False)
+    except (ComposeError, SearchFailed, ValueError) as exc:
+        return json.dumps({"error": str(exc)})

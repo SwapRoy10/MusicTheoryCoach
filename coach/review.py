@@ -15,43 +15,55 @@ import xml.etree.ElementTree as ET
 
 from .score_import import read_ranked, root_from_file
 from .checker import check, constraints_for
-from .harmony import identify, vocabulary
+from .harmony import identify, label_for, tonic_pc as key_tonic_pc, tonic_step, vocabulary
 from .model import VOICES
 from .reference import library
 from .report import save_json
 
 
-def canonical_label(text):
-    text = text.strip().replace("º", "°")
-    match = re.fullmatch(r"([iIvV]+)([o°ø0]?)([0-9/]{0,4})", text)
-    if not match:
-        return None
-    numeral, quality, figures = match.groups()
-    quality = {"o": "°", "0": "ø"}.get(quality, quality)
+def _figures(figures):
     digits = figures.replace("/", "")
     if digits in ("64", "65", "43", "42"):
-        figures = digits[0] + "/" + digits[1]
-    elif digits in ("", "6", "7"):
-        figures = digits
-    else:
+        return digits[0] + "/" + digits[1]
+    if digits in ("", "6", "7"):
+        return digits
+    return None
+
+
+def canonical_label(text):
+    """Normalize a written numeral: V65 -> V6/5, V7/V, viio7/V, N6, Ger+6 (or Ger65), bVI, It6."""
+    text = text.strip().replace("º", "°").replace("♭", "b").replace("♯", "#").replace(" ", "")
+    six = re.fullmatch(r"(It|Fr|Ger)(\+?6|\+?4/?3|\+?6/?5)?", text)
+    if six:
+        return six.group(1) + "+6"
+    match = re.fullmatch(r"(b?)([iIvV]+|N)([o°ø0+]?)([0-9/]{0,4})(?:/(b?)([iIvV]+)([o°]?))?", text)
+    if not match:
         return None
-    return numeral + quality + figures
+    flat, numeral, quality, figures, tflat, target, tquality = match.groups()
+    quality = {"o": "°", "0": "ø"}.get(quality, quality)
+    figures = _figures(figures)
+    if figures is None:
+        return None
+    label = flat + numeral + quality + figures
+    if target:
+        label += "/" + tflat + target + {"o": "°"}.get(tquality, tquality)
+    return label
 
 
 def review_harmony(score, supplied):
     labels = {(r["measure"], r["beat"]): r["text"] for r in supplied if canonical_label(r["text"])}
     events = []
     for time, frame in score.frames():
-        chord = identify(frame, score.fifths)
+        chord = identify(frame, score.fifths, score.mode)
         if chord["status"] == "uncertain" and len(frame) == 4:
             names = {n.pitch.name for n in frame.values()}
-            candidates = [c for c in vocabulary(score.fifths)
-                          if c["size"] == 4 and set(c["pitches"]) - {c["pitches"][2]} == names]
+            candidates = [c for c in vocabulary(score.fifths, score.mode)
+                          if c["size"] == 4 and c["kind"] != "aug6" and set(c["pitches"]) - {c["pitches"][2]} == names]
             if len(candidates) == 1:
                 candidate = candidates[0]
                 bass = min(frame.values(), key=lambda n: n.pitch.midi).pitch.name
                 inv = candidate["pitches"].index(bass)
-                chord = {**candidate, "roman": candidate["symbol"] + ("7", "6/5", "4/3", "4/2")[inv],
+                chord = {**candidate, "roman": label_for(candidate, inv),
                          "status": "interpreted", "bass": bass, "inversion": inv,
                          "reason": "Root, third and seventh are present; fifth is omitted. Contextual interpretation.",
                          "omitted": candidate["pitches"][2], "sounding_pitches": sorted(names)}
@@ -65,9 +77,16 @@ def review_harmony(score, supplied):
     return events
 
 
-def degree(pitch, fifths):
+def degree(pitch, fifths, mode="major"):
     from .model import STEPS
-    return (STEPS.index(pitch.step) - (4 * fifths) % 7) % 7 + 1
+    return (STEPS.index(pitch.step) - STEPS.index(tonic_step(fifths, mode))) % 7 + 1
+
+
+def in_mode(labels, mode):
+    """Major-key paradigm numerals as they read in minor: I -> i (V stays V with the raised leading tone)."""
+    if mode != "minor":
+        return labels
+    return [("i" + l[1:]) if l.startswith("I") and not l.startswith("IV") else l for l in labels]
 
 
 # Paradigms the reviewer recognizes: name, numerals, bass degrees, required soprano.
@@ -90,11 +109,12 @@ def paradigms(score, harmony):
     for index in range(len(harmony)-2):
         window = harmony[index:index+3]
         frame_window = [f for _, f in frames[index:index+3]]
-        bass = [degree(f["B"].pitch, score.fifths) for f in frame_window]
-        soprano = [degree(f["S"].pitch, score.fifths) for f in frame_window]
+        bass = [degree(f["B"].pitch, score.fifths, score.mode) for f in frame_window]
+        soprano = [degree(f["S"].pitch, score.fifths, score.mode) for f in frame_window]
         romans = [c["roman"] for c in window]
         for name, expected, expected_bass, expected_soprano in specs:
-            alternative_passing = name == "Parallel 10ths" and romans == ["I", "viiø6/5", "I6"]
+            expected = in_mode(expected, score.mode)
+            alternative_passing = name == "Parallel 10ths" and romans == in_mode(["I", "viiø6/5", "I6"], score.mode)
             if bass != expected_bass or (romans != expected and not alternative_passing):
                 continue
             source = next(p for p in patterns if p["name"] == name)
@@ -182,7 +202,7 @@ def run_review(score_path, out):
                                      "voices": [voice], "notes": [note.data(),target.data()],
                                      "message": f"Under the {old['roman']} interpretation, its seventh {note.pitch} moves to {target.pitch}, rather than descending by step."})
     # Doubled leading tones are apparent even when supplied harmony was not prescribed.
-    tonic_pc = (7*score.fifths) % 12
+    tonic_pc = key_tonic_pc(score.fifths, score.mode)
     for chord in harmony:
         leading = [by_id[n["id"]] for n in chord["notes"].values() if by_id[n["id"]].pitch.midi % 12 == (tonic_pc-1)%12]
         if len(leading) > 1:
@@ -218,11 +238,11 @@ def run_review(score_path, out):
         else:
             before = harmony[index-1] if index else None
             tonic_soprano = by_id[current["notes"]["S"]["id"]].pitch.midi % 12 == tonic_pc
-            confirmed = before and before["roman"] in ("V", "V7") and current["roman"] == "I" and tonic_soprano
+            confirmed = before and before["roman"] in ("V", "V7") and current["roman"] in ("I", "i") and tonic_soprano
             description = "Root-position V-I with tonic in the soprano supports the marked perfect authentic cadence." if confirmed else "The marked PAC does not meet the simple root-position V-I / tonic-soprano check."
         label_notes.append(f"m. {annotation['measure']}, beat {annotation['beat']}, {annotation['text']}: {description}")
-    tonic_name = next(c for c in vocabulary(score.fifths) if c["degree"] == 1 and c["size"] == 3)["pitches"][0]
-    scope_notes = [f"Reviewed all {len(score.measures)} populated measures in {tonic_name} major, with {len(harmony)} aligned sonorities. The input contains {scope['input_measures']} measures; all-rest trailing measures {scope['trailing_empty_measures'][0]}-{scope['trailing_empty_measures'][-1]} are omitted from this engraving." if scope["trailing_empty_measures"] else f"Reviewed all {len(score.measures)} measures in {tonic_name} major.",
+    tonic_name = vocabulary(score.fifths, score.mode)[0]["pitches"][0] + " " + score.mode
+    scope_notes = [f"Reviewed all {len(score.measures)} populated measures in {tonic_name}, with {len(harmony)} aligned sonorities. The input contains {scope['input_measures']} measures; all-rest trailing measures {scope['trailing_empty_measures'][0]}-{scope['trailing_empty_measures'][-1]} are omitted from this engraving." if scope["trailing_empty_measures"] else f"Reviewed all {len(score.measures)} measures in {tonic_name}.",
                    scope["voice_assignment"], "Your original lyrics/numerals are preserved. The additional dark-blue row gives reviewed harmony. Numbered findings and named paradigm brackets link to this report.",
                    "Checks cover exact parallels, ranges, spacing, overlap, basic tendency-tone advice and numeral comparison. Incomplete sevenths and paradigm variants are explicitly contextual. No corrected score is claimed."]
     paradigm_notes = [f"{p['name']}: m. {p['start']['measure']} b. {p['start']['beat']} to m. {p['end']['measure']} b. {p['end']['beat']}: {p['description']} Reference printed p. {p['source_printed_page']}, figure {p['source_figure']}." for p in matches]
@@ -230,7 +250,7 @@ def run_review(score_path, out):
         if [c["roman"] for c in harmony[index:index+4]] == ["iii", "IV", "I6/4", "I"]:
             last = harmony[index+3]
             paradigm_notes.append(f"m. {chord['measure']} beat {chord['beat']} to m. {last['measure']} beat {last['beat']}: iii-IV-I6/4-I resembles the iii-to-IV connection in printed p. 14, figure 9, but lacks its opening I and adds I6/4. It is a fragment/variant, not a full source match.")
-        if chord["roman"] == "I6/4" and index+1 < len(harmony):
+        if chord["roman"] in ("I6/4", "i6/4") and index+1 < len(harmony):
             following = harmony[index+1]
             if following["roman"] not in ("V", "V7") or following.get("bass") != chord.get("bass"):
                 paradigm_notes.append(f"m. {chord['measure']} beat {chord['beat']}: I6/4 is correctly spelled, but this is not the standard cadential 6/4-to-V over a held dominant bass. Review the intended tonic-expansion function.")
@@ -239,7 +259,7 @@ def run_review(score_path, out):
     for chord in harmony:
         if chord["roman"] == "viiø6/5" and canonical_label(chord["original_label"] or "") == "V4/3":
             alto = by_id[chord["notes"]["A"]["id"]]
-            dominant_root = next(c for c in vocabulary(score.fifths) if c["degree"] == 5 and c["size"] == 3)["pitches"][0]
+            dominant_root = next(c for c in vocabulary(score.fifths, score.mode) if c["degree"] == 5 and c["size"] == 3)["pitches"][0]
             from .model import Pitch
             replacement = Pitch.parse(dominant_root + str(alto.pitch.octave))
             candidate = score.change(alto.id,replacement)

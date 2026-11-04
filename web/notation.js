@@ -2,20 +2,35 @@
 
 const FIGURES = /^(6\/4|6\/5|4\/3|4\/2|6|7)?$/;
 
-/** Render an ASCII Roman numeral ("viiø6/5") as HTML with stacked figures. */
-export function romanHTML(label) {
-  const match = /^([ivIV]+)([°ø+]?)(.*)$/.exec(label || "");
-  if (!match || !FIGURES.test(match[3])) return escapeHTML(label || "?");
-  const [, numeral, quality, figures] = match;
-  let html = `<span class="rn-base">${numeral}</span>`;
-  if (quality) html += `<span class="rn-quality">${quality}</span>`;
+function figuresHTML(figures) {
+  if (!figures) return "";
   if (figures.includes("/")) {
     const [upper, lower] = figures.split("/");
-    html += `<span class="rn-stack"><span>${upper}</span><span>${lower}</span></span>`;
-  } else if (figures) {
-    html += `<span class="rn-single">${figures}</span>`;
+    return `<span class="rn-stack"><span>${upper}</span><span>${lower}</span></span>`;
   }
-  return html;
+  return `<span class="rn-single">${figures}</span>`;
+}
+
+function numeralHTML(text) {
+  const match = /^(b?)([ivIV]+|N)([°ø+]?)(.*)$/.exec(text || "");
+  if (!match || !FIGURES.test(match[4])) return null;
+  const [, flat, numeral, quality, figures] = match;
+  let html = flat ? `<span class="rn-flat">♭</span>` : "";
+  html += `<span class="rn-base">${numeral}</span>`;
+  if (quality) html += `<span class="rn-quality">${quality}</span>`;
+  return html + figuresHTML(figures);
+}
+
+/** Render an ASCII Roman numeral ("viiø6/5", "V6/5/V", "N6", "Ger+6", "bVI") as HTML with stacked figures. */
+export function romanHTML(label) {
+  const six = /^(It|Fr|Ger)\+6$/.exec(label || "");
+  if (six) return `<span class="rn-base">${six[1]}</span><span class="rn-single">+6</span>`;
+  const [chord, target] = String(label || "").split(/\/(?=b?[ivIV]+[°]?$)/);
+  const head = numeralHTML(chord);
+  if (!head) return escapeHTML(label || "?");
+  if (target === undefined) return head;
+  const tail = numeralHTML(target);
+  return tail ? `${head}<span class="rn-slash">/</span>${tail}` : escapeHTML(label);
 }
 
 const RULES = {
@@ -40,6 +55,9 @@ const RULES = {
   overlap: "Voice overlap",
   rhythm: "Rhythm",
   tonic_ending: "Ending",
+  applied_resolution: "Applied chord resolution",
+  augmented_sixth: "Augmented sixth resolution",
+  neapolitan: "Neapolitan",
   measure_count: "Length",
   measure_duration: "Measure duration",
 };

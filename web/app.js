@@ -3,6 +3,7 @@
 
 import { drawOverlay, ringNotes } from "./overlay.js";
 import { Player } from "./player.js";
+import { PracticeEditor, writeExercise, parsePitch } from "./practice.js";
 import { romanHTML, ruleName, withNoteIds, escapeHTML, leadingLocation, VOICE_NAMES, SPECIES_NAMES } from "./notation.js";
 
 const PYODIDE = "https://cdn.jsdelivr.net/npm/pyodide@0.29.5/";
@@ -16,7 +17,9 @@ const state = {
   analysis: null, report: "", musicxml: "", name: "", filter: "all", pinned: null,
   mode: "review", composeTab: "species",
   form: { species: "1", above: "true", source: "generate", mode: "dorian", cantus: "", key: "C", bars: "4",
-          line: "", given: "S", lineKey: "C" },
+          line: "", given: "S", lineKey: "C", chromatic: false, lineChromatic: false },
+  practiceForm: { pkind: "species", pspecies: "1", pabove: "true", pmode: "dorian", pkey: "C", pbars: "4", pgiven: "S", pchromatic: false },
+  practice: null,
 };
 
 // ---------- engines ----------
@@ -100,13 +103,39 @@ $("#download").addEventListener("click", () => save(state.report, "text/markdown
 $("#download-xml").addEventListener("click", () =>
   save(state.musicxml, "application/vnd.recordare.musicxml+xml", `${baseName()}.musicxml`));
 $("#mode").addEventListener("click", () => setMode(state.mode === "compose" ? "review" : "compose"));
+$("#practice").addEventListener("click", () => setMode(state.mode === "practice" ? "review" : "practice"));
 $("#start-compose").addEventListener("click", () => setMode("compose"));
+$("#start-practice").addEventListener("click", () => setMode("practice"));
 
 function setMode(mode) {
+  const leaving = state.mode;
   state.mode = mode;
-  $("#mode").textContent = mode === "compose" ? "Review a score" : "Compose";
   $("#mode").setAttribute("aria-pressed", String(mode === "compose"));
+  $("#practice").setAttribute("aria-pressed", String(mode === "practice"));
   document.body.classList.toggle("composing", mode === "compose");
+  document.body.classList.toggle("practicing", mode === "practice");
+  if (leaving === "practice" && mode !== "practice") {
+    // Leaving practice clears its score from the page.
+    state.analysis = null;
+    player.stop();
+    scoreEl.querySelector(".engraving")?.remove();
+    scoreEl.querySelector(".overlay")?.remove();
+    document.body.classList.remove("has-score");
+    $("#play").hidden = $("#download").hidden = $("#download-xml").hidden = true;
+  }
+  if (mode === "practice") {
+    if (state.practice) {
+      document.body.classList.add("has-score");
+      showPractice();
+    } else {
+      state.analysis = null;
+      scoreEl.querySelector(".engraving")?.remove();
+      scoreEl.querySelector(".overlay")?.remove();
+      document.body.classList.remove("has-score");
+      renderPanel();
+    }
+    return;
+  }
   if (state.analysis || mode === "compose") renderPanel();
   else panel.innerHTML = introHTML;
   if (mode === "compose") panel.querySelector("form")?.scrollIntoView({ block: "nearest" });
@@ -144,7 +173,7 @@ async function run(label, call, name, keep = {}) {
 }
 
 async function openFile(name, bytesPromise) {
-  if (state.mode === "compose") setMode("review");
+  if (state.mode !== "review") setMode("review");
   const bytes = await bytesPromise;
   return run(`Reviewing ${name}…`, (bridge) => bridge.review_upload(name, new Uint8Array(bytes)), name);
 }
@@ -153,14 +182,14 @@ function compose() {
   const f = state.form;
   const seed = Math.floor(Math.random() * 2 ** 31);
   if (state.composeTab === "harmonize") {
-    const options = { text: f.line, voice: f.given, key: f.lineKey, seed };
+    const options = { text: f.line, voice: f.given, key: f.lineKey, seed, chromatic: f.lineChromatic };
     return run(`Harmonizing your ${f.given === "S" ? "melody" : "bass"}…`, (bridge) => bridge.harmonize(JSON.stringify(options)),
-      `Harmonization in ${f.lineKey} major`);
+      `Harmonization in ${keyLabel(f.lineKey)}`);
   }
   if (state.composeTab === "chorale") {
-    const options = { key: f.key, bars: Number(f.bars), seed };
+    const options = { key: f.key, bars: Number(f.bars), seed, chromatic: f.chromatic };
     return run("Composing a chorale…", (bridge) => bridge.compose_chorale(JSON.stringify(options)),
-      `Chorale in ${f.key} major`);
+      `Chorale in ${keyLabel(f.key)}`);
   }
   const species = Number(f.species);
   const options = { species, above: f.above === "true", mode: f.mode, seed,
@@ -203,7 +232,7 @@ function setStatus(text, kind) {
 // ---------- engraving ----------
 
 function render() {
-  if (!state.toolkit || !state.analysis) return;
+  if (!state.toolkit || (!state.analysis && !(state.mode === "practice" && state.practice))) return;
   const width = scoreEl.clientWidth;
   const scale = width < 640 ? 30 : 40;
   state.toolkit.setOptions({
@@ -220,6 +249,11 @@ function render() {
   engraving.className = "engraving";
   for (let page = 1; page <= state.toolkit.getPageCount(); page++) engraving.innerHTML += state.toolkit.renderToSVG(page);
   scoreEl.prepend(engraving);
+  if (state.mode === "practice" && state.practice) decoratePractice(engraving);
+  if (!state.analysis) {
+    scoreEl.querySelector(".overlay")?.remove();
+    return;
+  }
 
   const { findings } = state.analysis;
   const worst = new Map();
@@ -243,6 +277,12 @@ const introHTML = panel.innerHTML;
 
 function renderPanel() {
   const a = state.analysis;
+  if (state.mode === "practice") {
+    panel.innerHTML = practiceHTML() + (a ? (a.kind === "species" ? speciesHTML(a) : choraleHTML(a)) : "");
+    $("#download").hidden = !a;
+    $("#download-xml").hidden = !state.practice;
+    return;
+  }
   const form = state.mode === "compose" ? composeHTML() : "";
   if (!a) {
     panel.innerHTML = form || introHTML;
@@ -256,7 +296,11 @@ function renderPanel() {
 // ---------- compose form ----------
 
 const MODES = { dorian: "Dorian (D)", phrygian: "Phrygian (E)", mixolydian: "Mixolydian (G)", aeolian: "Aeolian (A)", ionian: "Ionian (C)" };
-const KEYS = ["C", "G", "D", "A", "E", "F", "Bb", "Eb", "Ab"];
+const KEYS = ["C", "G", "D", "A", "E", "F", "Bb", "Eb", "Ab", "Am", "Em", "Bm", "F#m", "C#m", "Dm", "Gm", "Cm", "Fm"];
+const keyLabel = (k) => (k.endsWith("m") ? `${k.slice(0, -1)} minor` : `${k} major`).replace(/^([A-G])b/, "$1♭").replace("#", "♯");
+const keyOptions = (current, option) => `<optgroup label="Major">${KEYS.filter((k) => !k.endsWith("m")).map((k) => option(k, keyLabel(k), current)).join("")}</optgroup>
+  <optgroup label="Minor">${KEYS.filter((k) => k.endsWith("m")).map((k) => option(k, keyLabel(k), current)).join("")}</optgroup>`;
+const check = (name, on, label) => `<label class="check"><input type="checkbox" name="${name}" ${on ? "checked" : ""}> ${label}</label>`;
 
 function composeHTML() {
   const f = state.form;
@@ -282,10 +326,11 @@ function composeHTML() {
   const chorale = `
       <div class="row">
         <label>Key
-          <select name="key">${KEYS.map((k) => option(k, `${k.replace("b", "♭")} major`, f.key)).join("")}</select></label>
+          <select name="key">${keyOptions(f.key, option)}</select></label>
         <label>Length
           <select name="bars">${[4, 5, 6, 7, 8].map((n) => option(n, `${n} bars`, f.bars)).join("")}</select></label>
       </div>
+      ${check("chromatic", f.chromatic, "Approach the cadence with a chromatic chord (applied V, Neapolitan, augmented sixth or borrowed chord)")}
       <p class="quiet">A new phrase each time: tonic expansions from the reference paradigms, a predominant and an
         authentic cadence, voiced in SATB and then reviewed by the chorale checker.</p>`;
   const example = f.given === "S" ? "E5 F5 G5 F5 | E5 D5 C5" : "C3 D3 E3 F3 | G3 G3 C3";
@@ -297,7 +342,8 @@ function composeHTML() {
       <label>Notes
         <textarea name="line" rows="2" spellcheck="false" autocomplete="off" placeholder="${example}">${escapeHTML(f.line)}</textarea></label>
       <label>Key
-        <select name="lineKey">${KEYS.map((k) => option(k, `${k.replace("b", "♭")} major`, f.lineKey)).join("")}</select></label>
+        <select name="lineKey">${keyOptions(f.lineKey, option)}</select></label>
+      ${check("lineChromatic", f.lineChromatic, "Use chromatic chords freely (otherwise only where the line needs them)")}
       <p class="quiet">Half notes, one chord each, ending on a whole-note tonic; bar lines are optional. You can also open a
         MusicXML file with just one line. The other three voices are written and the whole chorale is checked.</p>`;
   const panes = { species, chorale, harmonize };
@@ -311,7 +357,8 @@ function composeHTML() {
 }
 
 panel.addEventListener("input", (event) => {
-  const { name, value } = event.target;
+  const { name } = event.target;
+  const value = event.target.type === "checkbox" ? event.target.checked : event.target.value;
   if (!(name in state.form)) return;
   state.form[name] = value;
   if (name === "given") {
@@ -411,6 +458,14 @@ async function findFixes(i) {
 
 function applyFix(i, k) {
   const option = state.fixes[i][k];
+  if (state.mode === "practice" && state.practice) {
+    const editor = state.practice.editor;
+    for (const id of option.note_ids || [option.note_id]) {
+      if (editor.selectById(id, state.practice.ids)) editor.set(parsePitch(option.after));
+    }
+    state.practice.edits = (state.practice.edits || 0) + 1;
+    return checkPractice();
+  }
   const before = { analysis: state.analysis, report: state.report, musicxml: state.musicxml, composed: state.composed,
                    plan: state.plan, fixes: state.fixes, edits: state.edits };
   const history = [...state.history, before];
@@ -531,7 +586,9 @@ function choraleHTML(a) {
 
 /** Escape analyzer prose and typeset the Roman numerals in it with proper figures. */
 function prose(text) {
-  return escapeHTML(text).replace(/\b(?:vii|vi|iv|iii|ii|i|VII|VI|IV|V|III|II|I)[°ø]?(?:6\/4|6\/5|4\/3|4\/2|6|7)(?=[\s.,:;)]|$)/g,
+  const T = "(?:vii|vi|iv|iii|ii|VII|VI|IV|V|III|II)°?";
+  const pattern = new RegExp(`\\b(?:It|Fr|Ger)\\+6\\b|\\b(?:b(?=[IViv]))?(?:vii|vi|iv|iii|ii|i|VII|VI|IV|V|III|II|I|N)[°ø+]?(?:(?:6/4|6/5|4/3|4/2|6|7)(?:/b?${T})?|/b?${T})(?=[\\s.,:;)]|$)`, "g");
+  return escapeHTML(text).replace(pattern,
     (label) => `<span class="rn">${romanHTML(label)}</span>`);
 }
 
@@ -605,8 +662,13 @@ function targetFrom(el) {
 }
 
 document.addEventListener("click", (event) => {
+  if (state.mode === "practice" && !state.analysis) {
+    practiceClick(event);
+    return;
+  }
   if (!state.analysis) return;
   if (event.target.closest("a[href]")) return;
+  if (state.mode === "practice" && practiceClick(event)) return;
   const hear = event.target.closest("[data-hear]");
   if (hear) {
     const f = state.analysis.findings[Number(hear.dataset.hear)];
@@ -662,4 +724,297 @@ document.addEventListener("keydown", (event) => {
     state.pinned = null;
     highlight(null);
   }
+});
+
+
+// ---------- practice ----------
+
+const PRACTICE_STORE = "mtc-practice-v1";
+
+function savePractice() {
+  try {
+    if (state.practice) localStorage.setItem(PRACTICE_STORE, JSON.stringify(state.practice.editor.ex));
+  } catch { /* storage is a convenience only */ }
+}
+
+function restorePractice() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PRACTICE_STORE) || "null");
+    if (saved?.voices) {
+      state.practice = { editor: new PracticeEditor(saved), ids: {} };
+      state.practiceForm.pkind = saved.kind;
+    }
+  } catch { /* ignore */ }
+}
+restorePractice();
+
+async function newPractice() {
+  const f = state.practiceForm;
+  const options = f.pkind === "species"
+    ? { kind: "species", species: Number(f.pspecies), above: f.pabove === "true", mode: f.pmode }
+    : { kind: "chorale", key: f.pkey, bars: Number(f.pbars), given: f.pgiven, chromatic: f.pchromatic };
+  options.seed = Math.floor(Math.random() * 2 ** 31);
+  setStatus("Writing a new exercise…");
+  document.body.classList.add("busy");
+  await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 30)));
+  try {
+    const bridge = await pythonReady;
+    const reply = JSON.parse(bridge.practice_new(JSON.stringify(options)));
+    if (reply.error) {
+      setStatus(reply.error, "error");
+      return;
+    }
+    state.practice = { editor: new PracticeEditor(reply.exercise), ids: {} };
+    state.analysis = null;
+    savePractice();
+    document.body.classList.add("has-score");
+    await showPractice();
+    setStatus("");
+  } finally {
+    document.body.classList.remove("busy");
+  }
+}
+
+/** Engrave the exercise as it stands and refresh the panel. */
+async function showPractice() {
+  const toolkit = await verovioReady;
+  const { editor } = state.practice;
+  const { xml, ids } = writeExercise(editor.ex);
+  state.practice.ids = ids;
+  state.musicxml = xml;
+  state.name = editor.ex.title;
+  toolkit.loadData(withNoteIds(xml));
+  state.toolkit = toolkit;
+  render();
+  player.load(toolkit, xml);
+  $("#play").hidden = false;
+  renderPanel();
+}
+
+function decoratePractice(engraving) {
+  const { editor, ids } = state.practice;
+  for (const voice of editor.ex.voices) {
+    (ids[voice.id] || []).forEach((id, i) => {
+      const el = engraving.querySelector(`g[id="${id}"]`);
+      if (!el) return;
+      el.classList.add(voice.given ? "given" : "answer");
+      if (!voice.given && !voice.events[i].rest && !voice.events[i].pitch) el.classList.add("blank");
+    });
+  }
+  const sel = editor.selected;
+  if (sel) {
+    let i = sel.index;
+    const v = editor.voice(sel.voice);
+    do {
+      engraving.querySelector(`g[id="${ids[sel.voice]?.[i]}"]`)?.classList.add("selected");
+    } while (v.events[i].tieTo && ++i < v.events.length);
+  }
+}
+
+function edited() {
+  state.analysis = null;
+  state.practice.notice = "";
+  state.fixes = {};
+  state.pinned = null;
+  savePractice();
+  showPractice();
+}
+
+function practiceClick(event) {
+  const button = event.target.closest("[data-practice]");
+  if (button) {
+    const action = button.dataset.practice;
+    const editor = state.practice?.editor;
+    if (action === "new") newPractice();
+    else if (action === "check") checkPractice();
+    else if (action === "solution") toggleSolution();
+    else if (action === "reset" && editor) {
+      for (const v of editor.ex.voices) if (!v.given) v.events.forEach((e) => { if (!e.rest) e.pitch = null; });
+      editor.selected = editor.firstEmpty();
+      edited();
+    } else if (editor) {
+      keyCommand(action);
+    }
+    return true;
+  }
+  if (!state.practice || !event.target.closest("#score")) return false;
+  const el = noteOrRestAt(event.clientX, event.clientY);
+  if (el && state.practice.editor.selectById(el.id, state.practice.ids)) {
+    if (state.analysis) {
+      // A click on a marked note still opens its finding; editing starts with a key press.
+      const index = state.analysis.findings.findIndex((f) => f.notes.some((n) => n.id === el.id));
+      if (index >= 0) {
+        state.pinned = { finding: index };
+        highlight(state.pinned, false);
+        panel.querySelector(`.item[data-finding="${index}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+      render();
+      return true;
+    }
+    render();
+    return true;
+  }
+  return false;
+}
+
+function noteOrRestAt(x, y, slop = 6) {
+  for (const el of scoreEl.querySelectorAll("g.note, g.rest")) {
+    const head = el.querySelector(".notehead") || el;
+    const r = head.getBoundingClientRect();
+    if (x >= r.left - slop && x <= r.right + slop && y >= r.top - slop && y <= r.bottom + slop) return el;
+  }
+  return null;
+}
+
+function keyCommand(action) {
+  const editor = state.practice.editor;
+  if (!editor.selected && !["next", "prev"].includes(action)) return;
+  if (/^[A-G]$/.test(action)) {
+    editor.letter(action);
+    editor.move(1); // like most notation programs, typing a note moves on to the next one
+  } else {
+    ({ up: () => editor.step(1), down: () => editor.step(-1), octUp: () => editor.octave(1), octDown: () => editor.octave(-1),
+       sharp: () => editor.accidental(1), flat: () => editor.accidental(-1), natural: () => editor.accidental(0),
+       clear: () => editor.clear(), next: () => editor.move(1), prev: () => editor.move(-1),
+       voiceUp: () => editor.nextVoice(-1), voiceDown: () => editor.nextVoice(1) }[action] || (() => {}))();
+  }
+  if (["next", "prev", "voiceUp", "voiceDown"].includes(action)) render();
+  else edited();
+}
+
+document.addEventListener("keydown", (event) => {
+  if (state.mode !== "practice" || !state.practice) return;
+  if (event.target.closest("input, textarea, select") || event.metaKey || event.ctrlKey || event.altKey) return;
+  const key = event.key;
+  let action = null;
+  if (/^[a-gA-G]$/.test(key)) action = key.toUpperCase();
+  else if (key === "ArrowUp") action = event.shiftKey ? "octUp" : "up";
+  else if (key === "ArrowDown") action = event.shiftKey ? "octDown" : "down";
+  else if (key === "ArrowRight" || (key === "Tab" && !event.shiftKey)) action = "next";
+  else if (key === "ArrowLeft" || (key === "Tab" && event.shiftKey)) action = "prev";
+  else if (key === "#" || key === "+") action = "sharp";
+  else if (key === "-" || key === "_") action = "flat";
+  else if (key === "n" || key === "=") action = "natural";
+  else if (key === "Backspace" || key === "Delete") action = "clear";
+  else if (key === "PageUp") action = "voiceUp";
+  else if (key === "PageDown") action = "voiceDown";
+  else if (key === "Enter") return checkPractice();
+  if (!action) return;
+  event.preventDefault();
+  keyCommand(action);
+});
+
+async function checkPractice() {
+  const { editor } = state.practice;
+  const empty = editor.empties();
+  if (empty) {
+    state.practice.notice = `${empty} note${empty === 1 ? " is" : "s are"} still empty (shown as rests). Fill every note, then check.`;
+    renderPanel();
+    return;
+  }
+  state.practice.notice = "";
+  const ex = editor.ex;
+  const { xml } = writeExercise(ex);
+  const options = ex.kind === "species"
+    ? { kind: "species", species: ex.species, cantus: ex.above ? "lower" : "upper" }
+    : { kind: "chorale" };
+  const bytes = new TextEncoder().encode(xml);
+  await run("Checking your work…", (bridge) => bridge.review_upload(`${ex.title}.musicxml`, bytes, JSON.stringify(options)),
+    ex.title, { composed: false, plan: null });
+  if (state.analysis) {
+    state.practice.checked = true;
+    render();
+    renderPanel();
+  }
+}
+
+function toggleSolution() {
+  const p = state.practice;
+  if (p.mine) {
+    p.editor.fill(p.mine);
+    p.mine = null;
+  } else {
+    p.mine = p.editor.answers();
+    p.editor.fill(p.editor.ex.solution);
+  }
+  state.analysis = null;
+  showPractice().then(() => { if (!p.mine) return; checkPractice(); });
+}
+
+function practiceHTML() {
+  const f = state.practiceForm;
+  const option = (value, label, current) => `<option value="${value}" ${String(current) === String(value) ? "selected" : ""}>${escapeHTML(label)}</option>`;
+  const species = `
+      <div class="row">
+        <label>Species <select name="pspecies">${[1, 2, 3, 4, 5].map((n) => option(n, `${SPECIES_NAMES[n]}`, f.pspecies)).join("")}</select></label>
+        <label>Counterpoint <select name="pabove">${option("true", "Above", f.pabove)}${option("false", "Below", f.pabove)}</select></label>
+      </div>
+      <label>Mode <select name="pmode">${Object.entries(MODES).map(([v, l]) => option(v, l, f.pmode)).join("")}</select></label>`;
+  const chorale = `
+      <div class="row">
+        <label>Key <select name="pkey">${keyOptions(f.pkey, option)}</select></label>
+        <label>Given <select name="pgiven">${option("S", "Melody (soprano)", f.pgiven)}${option("B", "Bass line", f.pgiven)}</select></label>
+      </div>
+      <div class="row">
+        <label>Length <select name="pbars">${[4, 5, 6, 7, 8].map((n) => option(n, `${n} bars`, f.pbars)).join("")}</select></label>
+      </div>
+      ${check("pchromatic", f.pchromatic, "Include a chromatic chord before the cadence")}`;
+  const p = state.practice;
+  const ex = p?.editor.ex;
+  const sel = p?.editor.selected;
+  const selected = sel && p.editor.event(sel);
+  const pad = p ? `
+    <div class="pad" role="group" aria-label="Note entry">
+      <div class="pad-row">${["C", "D", "E", "F", "G", "A", "B"].map((l) => `<button type="button" data-practice="${l}">${l}</button>`).join("")}</div>
+      <div class="pad-row">
+        <button type="button" data-practice="up" title="Step up (↑)">↑</button>
+        <button type="button" data-practice="down" title="Step down (↓)">↓</button>
+        <button type="button" data-practice="octUp" title="Octave up (Shift+↑)">8va</button>
+        <button type="button" data-practice="octDown" title="Octave down (Shift+↓)">8vb</button>
+        <button type="button" data-practice="sharp" title="Sharp (#)">♯</button>
+        <button type="button" data-practice="flat" title="Flat (-)">♭</button>
+        <button type="button" data-practice="natural" title="Natural (n)">♮</button>
+      </div>
+      <div class="pad-row">
+        <button type="button" data-practice="prev" title="Previous note (←)">◀</button>
+        <button type="button" data-practice="next" title="Next note (→)">▶</button>
+        ${ex.voices.filter((v) => !v.given).length > 1 ? `<button type="button" data-practice="voiceUp" title="Voice above (Page Up)">Voice ↑</button>
+        <button type="button" data-practice="voiceDown" title="Voice below (Page Down)">Voice ↓</button>` : ""}
+        <button type="button" data-practice="clear" title="Clear (Backspace)">Clear</button>
+      </div>
+      <p class="quiet">Click a rest or note to select it, then type a letter (A–G) or use the buttons. Arrows move by step;
+        Shift+arrows by octave; # and - add accidentals; → and ← move along the voice.
+        ${selected ? `<b>Selected:</b> ${escapeHTML(p.editor.voice(sel.voice).name)}, ${selected.pitch ? escapeHTML(selected.pitch) : "empty"}.` : ""}</p>
+    </div>
+    <div class="practice-actions">
+      <button type="button" class="primary" data-practice="check">Check my work</button>
+      <button type="button" class="link" data-practice="solution">${p.mine ? "Back to my answer" : "Show a solution"}</button>
+      <button type="button" class="link" data-practice="reset">Start over</button>
+    </div>
+    ${p.notice ? `<p class="notice">${escapeHTML(p.notice)}</p>` : ""}
+    ${p.mine ? `<p class="composed">Showing a solution written by the composer and checked by the reviewer. Your answer is kept.</p>` : ""}` : "";
+  return `
+    <form class="compose practice" id="practice-form">
+      <h2>Practice</h2>
+      <div class="tabs two" role="tablist">
+        <button type="button" role="tab" data-ptab="species" aria-selected="${f.pkind === "species"}">Species</button>
+        <button type="button" role="tab" data-ptab="chorale" aria-selected="${f.pkind === "chorale"}">Chorale</button>
+      </div>
+      ${f.pkind === "species" ? species : chorale}
+      <button type="button" class="${p ? "link" : "primary"}" data-practice="new">${p ? "New exercise" : "Start an exercise"}</button>
+      ${ex ? `<div class="prompt"><h3>${escapeHTML(ex.title)}</h3><p>${escapeHTML(ex.prompt)}</p></div>` : `<p class="quiet">Write the answer right here on the score: no notation program or upload needed. Your work stays in this browser.</p>`}
+      ${pad}
+    </form>`;
+}
+
+panel.addEventListener("input", (event) => {
+  const { name } = event.target;
+  if (!(name in state.practiceForm)) return;
+  state.practiceForm[name] = event.target.type === "checkbox" ? event.target.checked : event.target.value;
+});
+panel.addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-ptab]");
+  if (!tab) return;
+  state.practiceForm.pkind = tab.dataset.ptab;
+  renderPanel();
 });

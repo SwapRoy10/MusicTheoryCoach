@@ -29,6 +29,7 @@
     <button type="button" id="play" class="play" hidden aria-pressed="false">▶ Play</button>
     <button type="button" id="download-xml" hidden>MusicXML</button>
     <button type="button" id="download" hidden>Report</button>
+    <button type="button" id="practice" aria-pressed="false">Practice</button>
     <button type="button" id="mode" aria-pressed="false">Compose</button>
     <label class="open">
       <input type="file" id="file" accept=".musicxml,.xml,.mxl">
@@ -46,14 +47,18 @@
           and the reviewed Roman numerals or intervals appear under each system.</p>
         <p class="examples-label">Or open an example:</p>
         <div id="examples" class="examples"></div>
-        <p class="examples-label">Or let it write one:</p>
-        <button type="button" id="start-compose" class="compose-start">Compose species counterpoint or a chorale</button>
+        <p class="examples-label">Or let it write one, or practice right here:</p>
+        <div class="examples">
+          <button type="button" id="start-compose" class="compose-start">Compose species counterpoint or a chorale</button>
+          <button type="button" id="start-practice" class="compose-start">Practice in the browser</button>
+        </div>
       </div>
     </div>
     <aside id="panel" class="panel" aria-label="Review">
       <div class="panel-intro">
         <h2>What the review covers</h2>
-        <p><strong>Chorales.</strong> Four voices in a major key and 4/4: parallel and direct intervals, ranges, spacing,
+        <p><strong>Chorales.</strong> Four voices in a major or minor key and 4/4, including applied chords, mixture, the
+          Neapolitan and augmented sixths: parallel and direct intervals, ranges, spacing,
           overlap, tendency tones, Roman numerals with inversions, cadences, and the contrapuntal paradigms
           from the reference library.</p>
         <p><strong>Species counterpoint.</strong> A cantus firmus in whole notes and one counterpoint above or below it,
@@ -62,6 +67,8 @@
         <p><strong>Hear it and fix it.</strong> Play the score with the sounding notes lit, listen to any single finding,
           and ask for a fix: each one is a single-note change that the reviewer has rechecked, and you can apply and undo it.</p>
         <p><strong>Compose.</strong> Species counterpoint, a new chorale phrase, or four parts around your own melody or bass.</p>
+        <p><strong>Practice.</strong> Get an exercise (a cantus firmus, a melody or a bass), write your answer on the score
+          in the browser, and check it.</p>
         <p class="quiet">Export from MuseScore, Sibelius, Finale, Dorico or Noteflight as MusicXML (.musicxml or .mxl).</p>
       </div>
     </aside>
