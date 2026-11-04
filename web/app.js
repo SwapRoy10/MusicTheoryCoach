@@ -17,7 +17,7 @@ const state = {
   analysis: null, report: "", musicxml: "", name: "", filter: "all", pinned: null,
   mode: "review", composeTab: "species",
   form: { species: "1", above: "true", source: "generate", mode: "dorian", cantus: "", key: "C", bars: "4",
-          line: "", given: "S", lineKey: "C", chromatic: false, lineChromatic: false },
+          line: "", given: "S", lineKey: "C", chromatic: false, lineChromatic: false, picardy: false, linePicardy: false },
   practiceForm: { pkind: "species", pspecies: "1", pabove: "true", pmode: "dorian", pkey: "C", pbars: "4", pgiven: "S", pchromatic: false },
   practice: null,
 };
@@ -182,12 +182,12 @@ function compose() {
   const f = state.form;
   const seed = Math.floor(Math.random() * 2 ** 31);
   if (state.composeTab === "harmonize") {
-    const options = { text: f.line, voice: f.given, key: f.lineKey, seed, chromatic: f.lineChromatic };
+    const options = { text: f.line, voice: f.given, key: f.lineKey, seed, chromatic: f.lineChromatic, picardy: f.linePicardy };
     return run(`Harmonizing your ${f.given === "S" ? "melody" : "bass"}…`, (bridge) => bridge.harmonize(JSON.stringify(options)),
       `Harmonization in ${keyLabel(f.lineKey)}`);
   }
   if (state.composeTab === "chorale") {
-    const options = { key: f.key, bars: Number(f.bars), seed, chromatic: f.chromatic };
+    const options = { key: f.key, bars: Number(f.bars), seed, chromatic: f.chromatic, picardy: f.picardy };
     return run("Composing a chorale…", (bridge) => bridge.compose_chorale(JSON.stringify(options)),
       `Chorale in ${keyLabel(f.key)}`);
   }
@@ -330,7 +330,8 @@ function composeHTML() {
         <label>Length
           <select name="bars">${[4, 5, 6, 7, 8].map((n) => option(n, `${n} bars`, f.bars)).join("")}</select></label>
       </div>
-      ${check("chromatic", f.chromatic, "Approach the cadence with a chromatic chord (applied V, Neapolitan, augmented sixth or borrowed chord)")}
+      ${check("chromatic", f.chromatic, "Use chromatic harmony: tonicizations, a common-tone diminished seventh, and a chromatic chord before the cadence")}
+      ${f.key.endsWith("m") ? check("picardy", f.picardy, "End with a Picardy third (a major final chord)") : ""}
       <p class="quiet">A new phrase each time: tonic expansions from the reference paradigms, a predominant and an
         authentic cadence, voiced in SATB and then reviewed by the chorale checker.</p>`;
   const example = f.given === "S" ? "E5 F5 G5 F5 | E5 D5 C5" : "C3 D3 E3 F3 | G3 G3 C3";
@@ -344,6 +345,7 @@ function composeHTML() {
       <label>Key
         <select name="lineKey">${keyOptions(f.lineKey, option)}</select></label>
       ${check("lineChromatic", f.lineChromatic, "Use chromatic chords freely (otherwise only where the line needs them)")}
+      ${f.lineKey.endsWith("m") ? check("linePicardy", f.linePicardy, "End with a Picardy third") : ""}
       <p class="quiet">Half notes, one chord each, ending on a whole-note tonic; bar lines are optional. You can also open a
         MusicXML file with just one line. The other three voices are written and the whole chorale is checked.</p>`;
   const panes = { species, chorale, harmonize };
@@ -361,6 +363,7 @@ panel.addEventListener("input", (event) => {
   const value = event.target.type === "checkbox" ? event.target.checked : event.target.value;
   if (!(name in state.form)) return;
   state.form[name] = value;
+  if (name === "key" || name === "lineKey") renderPanel();
   if (name === "given") {
     panel.querySelector('textarea[name="line"]').placeholder = value === "S" ? "E5 F5 G5 F5 | E5 D5 C5" : "C3 D3 E3 F3 | G3 G3 C3";
   }
@@ -587,7 +590,7 @@ function choraleHTML(a) {
 /** Escape analyzer prose and typeset the Roman numerals in it with proper figures. */
 function prose(text) {
   const T = "(?:vii|vi|iv|iii|ii|VII|VI|IV|V|III|II)°?";
-  const pattern = new RegExp(`\\b(?:It|Fr|Ger)\\+6\\b|\\b(?:b(?=[IViv]))?(?:vii|vi|iv|iii|ii|i|VII|VI|IV|V|III|II|I|N)[°ø+]?(?:(?:6/4|6/5|4/3|4/2|6|7)(?:/b?${T})?|/b?${T})(?=[\\s.,:;)]|$)`, "g");
+  const pattern = new RegExp(`\\bct°7|\\bV9\\b|\\b(?:It|Fr|Ger)\\+6\\b|\\b(?:b(?=[IViv]))?(?:vii|vi|iv|iii|ii|i|VII|VI|IV|V|III|II|I|N)[°ø+]?(?:(?:6/4|6/5|4/3|4/2|6|7)(?:/b?${T})?|/b?${T})(?=[\\s.,:;)]|$)`, "g");
   return escapeHTML(text).replace(pattern,
     (label) => `<span class="rn">${romanHTML(label)}</span>`);
 }
@@ -829,7 +832,8 @@ function practiceClick(event) {
     else if (action === "check") checkPractice();
     else if (action === "solution") toggleSolution();
     else if (action === "reset" && editor) {
-      for (const v of editor.ex.voices) if (!v.given) v.events.forEach((e) => { if (!e.rest) e.pitch = null; });
+      if (editor.ex.rhythmEditable && editor.ex.template) editor.fill(editor.ex.template);
+      else for (const v of editor.ex.voices) if (!v.given) v.events.forEach((e) => { if (!e.rest) e.pitch = null; });
       editor.selected = editor.firstEmpty();
       edited();
     } else if (editor) {
@@ -876,7 +880,9 @@ function keyCommand(action) {
     ({ up: () => editor.step(1), down: () => editor.step(-1), octUp: () => editor.octave(1), octDown: () => editor.octave(-1),
        sharp: () => editor.accidental(1), flat: () => editor.accidental(-1), natural: () => editor.accidental(0),
        clear: () => editor.clear(), next: () => editor.move(1), prev: () => editor.move(-1),
-       voiceUp: () => editor.nextVoice(-1), voiceDown: () => editor.nextVoice(1) }[action] || (() => {}))();
+       voiceUp: () => editor.nextVoice(-1), voiceDown: () => editor.nextVoice(1),
+       eighth: () => editor.duration(0.5), quarter: () => editor.duration(1), half: () => editor.duration(2),
+       whole: () => editor.duration(4), dot: () => editor.dot(), tie: () => editor.tie() }[action] || (() => {}))();
   }
   if (["next", "prev", "voiceUp", "voiceDown"].includes(action)) render();
   else edited();
@@ -898,6 +904,9 @@ document.addEventListener("keydown", (event) => {
   else if (key === "Backspace" || key === "Delete") action = "clear";
   else if (key === "PageUp") action = "voiceUp";
   else if (key === "PageDown") action = "voiceDown";
+  else if (state.practice.editor.ex.rhythmEditable && ({ 3: "eighth", 4: "quarter", 5: "half", 6: "whole", ".": "dot", t: "tie", T: "tie" })[key]) {
+    action = { 3: "eighth", 4: "quarter", 5: "half", 6: "whole", ".": "dot", t: "tie", T: "tie" }[key];
+  }
   else if (key === "Enter") return checkPractice();
   if (!action) return;
   event.preventDefault();
@@ -935,7 +944,7 @@ function toggleSolution() {
     p.mine = null;
   } else {
     p.mine = p.editor.answers();
-    p.editor.fill(p.editor.ex.solution);
+    p.editor.fill(p.editor.solution());
   }
   state.analysis = null;
   showPractice().then(() => { if (!p.mine) return; checkPractice(); });
@@ -982,6 +991,14 @@ function practiceHTML() {
         <button type="button" data-practice="voiceDown" title="Voice below (Page Down)">Voice ↓</button>` : ""}
         <button type="button" data-practice="clear" title="Clear (Backspace)">Clear</button>
       </div>
+      ${ex.rhythmEditable ? `<div class="pad-row rhythm">
+        <button type="button" data-practice="eighth" title="Eighth note (3)">Eighth</button>
+        <button type="button" data-practice="quarter" title="Quarter note (4)">Quarter</button>
+        <button type="button" data-practice="half" title="Half note (5)">Half</button>
+        <button type="button" data-practice="whole" title="Whole note (6)">Whole</button>
+        <button type="button" data-practice="dot" title="Dot (.)">Dot</button>
+        <button type="button" data-practice="tie" title="Tie into the next note (T)">Tie</button>
+      </div>` : ""}
       <p class="quiet">Click a rest or note to select it, then type a letter (A–G) or use the buttons. Arrows move by step;
         Shift+arrows by octave; # and - add accidentals; → and ← move along the voice.
         ${selected ? `<b>Selected:</b> ${escapeHTML(p.editor.voice(sel.voice).name)}, ${selected.pitch ? escapeHTML(selected.pitch) : "empty"}.` : ""}</p>

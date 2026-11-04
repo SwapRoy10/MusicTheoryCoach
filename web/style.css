@@ -321,3 +321,4 @@ p.fixes { margin: 0 8px 8px 36px !important; }
 .practicing .score g.selected .notehead, .practicing .score g.rest.selected {
   filter: drop-shadow(0 0 2px #1f3a93) drop-shadow(0 0 5px #1f3a9366);
 }
+.rn-small { font-size: 0.85em; }

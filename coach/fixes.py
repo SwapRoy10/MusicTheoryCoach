@@ -63,6 +63,10 @@ def chorale_fixes(score, assignment, finding, limit=3):
         if score.mode == "minor":  # the raised sixth and seventh
             from .harmony import degree_pitch
             extra = tuple(degree_pitch(d, score.fifths, "minor", 1) for d in (6, 7))
+        signature = scale(score.fifths)
+        if note.pitch.alter != signature[note.pitch.step]:
+            # A chromatic note may need another chromatic spelling (in an applied chord or augmented sixth, say).
+            extra = extra + tuple((st, signature[st] + d) for st in STEPS for d in (-1, 1))
         for pitch in _pitches_near(note.pitch, score.fifths, *RANGES[note.voice], extra=extra):
             candidate = window.change(note.id, pitch)
             after = check(candidate, assignment, enforce_length=False)
@@ -71,8 +75,8 @@ def chorale_fixes(score, assignment, finding, limit=3):
                 continue
             suggestions = sum(f["severity"] == "suggestion" for f in after)
             removed = sorted({k[0] for k in old_errors - new_errors})
-            options.append(((len(new_errors), suggestions, ORDER[note.voice], abs(pitch.midi - note.pitch.midi),
-                             pitch.midi % 12 == (tonic - 1) % 12),
+            options.append(((len(new_errors), suggestions, ORDER[note.voice], pitch.alter != signature[pitch.step],
+                             abs(pitch.midi - note.pitch.midi), pitch.midi % 12 == (tonic - 1) % 12),
                             {"note_id": note.id, "voice": note.voice, "measure": note.measure, "beat": str(note.beat),
                              "before": str(note.pitch), "after": str(pitch), "removes": removed,
                              "fixed_errors": len(old_errors - new_errors),

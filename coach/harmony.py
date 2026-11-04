@@ -13,7 +13,8 @@ from .model import Pitch, STEPS, VOICES, scale
 
 ROMAN = ("I", "II", "III", "IV", "V", "VI", "VII")
 TRIADS = {"M": ((2, 4), (4, 7)), "m": ((2, 3), (4, 7)), "d": ((2, 3), (4, 6)), "A": ((2, 4), (4, 8))}
-SEVENTHS = {"Mm": ("M", (6, 10)), "MM": ("M", (6, 11)), "mm": ("m", (6, 10)), "dm": ("d", (6, 10)), "dd": ("d", (6, 9))}
+SEVENTHS = {"Mm": ("M", (6, 10)), "MM": ("M", (6, 11)), "mm": ("m", (6, 10)), "dm": ("d", (6, 10)), "dd": ("d", (6, 9)),
+            "Am": ("A", (6, 10))}
 TRIAD_FIGURES = ("", "6", "6/4")
 SEVENTH_FIGURES = ("7", "6/5", "4/3", "4/2")
 
@@ -62,7 +63,7 @@ def numeral(degree, quality, prefix=""):
         base = base.lower()
     if quality == "d":
         return prefix + base + "°"
-    if quality == "A":
+    if quality in ("A", "Am"):
         return prefix + base + "+"
     if quality == "dm":
         return prefix + base + "ø"
@@ -138,7 +139,24 @@ def _vocabulary(fifths, mode):
     sharp2 = name_of(*degree_pitch(2, fifths, mode, 1))
     for symbol, names in (("It+6", [b6, one, sharp4]), ("Fr+6", [b6, one, two, sharp4]),
                           ("Ger+6", [b6, one, b3, sharp4]), ("Ger+6", [b6, one, sharp2, sharp4])):
-        add({"degree": 6, "symbol": symbol, "pitches": names, "size": len(names), "kind": "aug6"})
+        entry = {"degree": 6, "symbol": symbol, "pitches": names, "size": len(names), "kind": "aug6"}
+        if sharp2 in names:
+            entry["spelling"] = "doubly augmented fourth"
+        add(entry)
+    # Augmented triads: the raised fifth of I or V (and the harmonic-minor mediant), and V+7.
+    five = degree_pitch(5, fifths, mode, 1 if mode == "minor" else 0)
+    altered = [(degree_pitch(5, fifths, mode), "A", 5)] if mode == "major" else []
+    altered += [(degree_pitch(1, fifths, mode), "A", 1)] if mode == "major" else []
+    altered += [(degree_pitch(3, fifths, mode), "A", 3)] if mode == "minor" else []
+    for root, quality, degree in altered:
+        add({"degree": degree, "symbol": numeral(degree, quality), "pitches": build(root, quality), "size": 3, "kind": "altered"})
+    add({"degree": 5, "symbol": "V+", "pitches": build(degree_pitch(5, fifths, mode), "Am") if mode == "major"
+         else build(degree_pitch(5, fifths, mode), "Am"), "size": 4, "kind": "altered"})
+    # The dominant ninth (major ninth in major, minor ninth in minor); four voices omit its fifth.
+    root = degree_pitch(5, fifths, mode)
+    ninth = spell(root, ((8 % 7, 14 % 12),))[1] if mode == "major" else spell(root, ((1, 1),))[1]
+    v7 = build(root, "Mm")
+    add({"degree": 5, "symbol": "V", "pitches": v7 + [ninth], "size": 5, "kind": "ninth"})
     return tuple(chords)
 
 
@@ -170,9 +188,11 @@ def vocabulary(fifths, mode="major"):
 
 
 def label_for(chord, inversion):
-    """Roman numeral with figures: V6/5, V6/5/V, N6, Ger+6."""
+    """Roman numeral with figures: V6/5, V6/5/V, N6, Ger+6, V9."""
     if chord["kind"] == "aug6":
         return chord["symbol"]
+    if chord["kind"] == "ninth":
+        return "V9"
     figures = (TRIAD_FIGURES if chord["size"] == 3 else SEVENTH_FIGURES)[inversion]
     if chord["kind"] == "applied":
         return chord["symbol"] + figures + "/" + chord["target"]
@@ -187,15 +207,26 @@ def identify(frame, fifths, mode="major"):
         return {**result, "reason": "Four sounding voices are required for this analysis."}
     bass = min(frame.values(), key=lambda n: n.pitch.midi).pitch.name
     for chord in _vocabulary(fifths, mode):
+        if chord["kind"] == "ninth":
+            pitches = chord["pitches"]
+            if names == set(pitches) - {pitches[2]} and bass == pitches[0]:
+                return {**chord, "roman": "V9", "status": "identified", "bass": bass, "inversion": 0,
+                        "omitted": pitches[2],
+                        "reason": "The dominant ninth, with its fifth omitted as usual in four voices. "
+                                  "Its seventh and ninth normally resolve down by step."}
+            continue
         if set(chord["pitches"]) == names:
             inversion = chord["pitches"].index(bass)
             reason = {"diatonic": "Exact match to the complete spelled pitch set.",
                       "mixture": "A chord borrowed from the parallel " + ("major" if mode == "minor" else "minor") + " (mode mixture).",
                       "applied": f"An applied (secondary) chord: it tonicizes {chord.get('target')}.",
                       "neapolitan": "The Neapolitan: a major triad on the lowered second degree.",
-                      "aug6": "An augmented-sixth chord: the lowered sixth and raised fourth expand outward to the dominant."}[chord["kind"]]
+                      "aug6": "An augmented-sixth chord: the lowered sixth and raised fourth expand outward to the dominant.",
+                      "altered": "An augmented triad: the raised fifth is a chromatic passing tone that rises by step."}[chord["kind"]]
+            if chord.get("spelling"):
+                reason += " Spelled with the raised second (the doubly augmented fourth), as it usually is before I6/4 in major."
             if chord["kind"] == "aug6" and bass != chord["pitches"][0]:
-                reason += " Usually the lowered sixth is in the bass."
+                reason += " Here it is inverted: the lowered sixth is not in the bass."
             return {**chord, "roman": label_for(chord, inversion), "status": "identified",
                     "bass": bass, "inversion": inversion, "reason": reason}
     return result

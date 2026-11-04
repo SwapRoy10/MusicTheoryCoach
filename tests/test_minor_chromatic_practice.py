@@ -133,3 +133,55 @@ class PracticeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RareChordTests(unittest.TestCase):
+    def test_augmented_triads_and_ninths(self):
+        cases = [((0, "major"), ("D#5", "B4", "G4", "G3"), "V+"), ((0, "major"), ("G#4", "E4", "C4", "C3"), "I+"),
+                 ((0, "major"), ("F5", "D#5", "B4", "G3"), "V+7"), ((0, "major"), ("A4", "F4", "B3", "G2"), "V9"),
+                 ((0, "minor"), ("G#4", "E4", "C4", "C3"), "III+"), ((0, "minor"), ("F5", "D5", "G#4", "E3"), "V9"),
+                 ((0, "major"), ("Ab4", "F#4", "C4", "C3"), "It+6")]
+        for (fifths, mode), names, expected in cases:
+            with self.subTest(expected=expected):
+                self.assertEqual(identify(frame(*names), fifths, mode)["roman"], expected)
+
+    def test_six_four_kinds_and_common_tone_seventh(self):
+        result = review(["E5 G4 G3 C3", "D#5 F#4 A3 C3", "E5 G4 G3 C3", "F5 A4 C4 C3", "E5 G4 C4 C3",
+                         "D5 G4 B3 D3", "E5 G4 C4 E3", "D5 F4 A3 F3", "C5 E4 C4 G2", "B4 D4 G3 G2", "C5 E4 G3 C3"],
+                        0, "major")
+        romans = [c["roman"] for c in result["harmony"]]
+        self.assertEqual(romans[:3], ["I", "ct°7", "I"])
+        kinds = {c["roman"]: c.get("six_four") for c in result["harmony"] if "six_four" in c}
+        self.assertEqual(kinds, {"IV6/4": "pedal", "V6/4": "passing", "I6/4": "cadential"})
+        self.assertNotIn("applied_resolution", [f["rule"] for f in result["findings"]])
+        self.assertNotIn("six_four", [f["rule"] for f in result["findings"]])
+
+    def test_unexplained_six_four_is_noted(self):
+        result = review(["E5 C5 G4 C3", "F5 C5 A4 C3", "D5 B4 G4 G3", "E5 C5 G4 C3", "C5 G4 E4 C3"], 0, "major")
+        self.assertIn("six_four", [f["rule"] for f in result["findings"]])
+
+    def test_composer_uses_tonicizations_and_picardy(self):
+        seen = set()
+        for seed in range(12):
+            _, reviewed, plan = compose_chorale("C", 7, seed=seed, chromatic=True)
+            self.assertEqual(errors(reviewed["result"]["findings"]), [])
+            seen |= {e["figure"] for e in plan["expansions"]}
+        self.assertTrue(seen & {"tii", "tIV", "tvi", "tV", "ct"}, seen)
+        _, reviewed, plan = compose_chorale("Cm", 5, seed=1, picardy=True)
+        self.assertEqual(plan["chords"][-1], "I")
+        self.assertEqual(errors(reviewed["result"]["findings"]), [])
+
+    def test_harmonizer_pedal_six_four_and_augmented_dominant(self):
+        _, reviewed, plan = harmonize(parse_line("C3 C3 C3 F3 G3 G3 C3"), "B", "C", seed=3)
+        self.assertIn("IV6/4", plan["chords"])
+        self.assertEqual(errors(reviewed["result"]["findings"]), [])
+        _, reviewed, plan = harmonize(parse_line("C5 B4 C5 D5 E5 D5 C5 B4 A4 G#4 A4"), "S", "Am", seed=3, picardy=True)
+        self.assertEqual(plan["chords"][-1], "I")
+
+    def test_fifth_species_practice_lets_students_write_rhythm(self):
+        ex = new_exercise({"kind": "species", "species": 5, "seed": 3})
+        self.assertTrue(ex["rhythmEditable"])
+        cp = next(v for v in ex["voices"] if v["id"] == "CP")
+        self.assertEqual(sum(e["dur"] for e in cp["events"]), 4 * len(next(v for v in ex["voices"] if v["id"] == "CF")["events"]))
+        self.assertTrue(cp["events"][0].get("rest"))
+        self.assertEqual(sum(e["dur"] for e in ex["solutionEvents"]["CP"]), sum(e["dur"] for e in cp["events"]))

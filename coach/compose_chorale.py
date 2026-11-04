@@ -52,6 +52,17 @@ UNITS = [
     ("12b", "Voice exchange with skips descending bass", "I6", ["V6/5", "I"], [1, 4, 3]),
     ("arp", "Bass arpeggiation", "I", ["I6"], None),
     ("arp", "Bass arpeggiation", "I6", ["I"], None),
+    ("p64", "Passing 6/4", "I", ["V6/4", "I6"], None),
+    ("p64", "Passing 6/4", "I6", ["V6/4", "I"], None),
+    ("n64", "Pedal 6/4", "I", ["IV6/4", "I"], None),
+]
+# Chromatic expansions of the tonic (used when chromatic harmony is requested).
+CHROMATIC_UNITS = [
+    ("ct", "Common-tone diminished seventh", "I", ["ct°7", "I"], None),
+    ("tii", "Tonicized ii", "I", ["V6/5/ii", "ii", "V6/5", "I"], None),
+    ("tIV", "Tonicized IV", "I", ["V4/2/IV", "IV6", "V4/3", "I"], None),
+    ("tvi", "Tonicized vi", "I", ["V4/3/vi", "vi", "V6/5", "I"], None),
+    ("tV", "Tonicized V", "I6", ["V6/5/V", "V", "I"], None),
 ]
 PREDOMINANTS = {"I": ["IV", "ii6", "ii6/5"], "I6": ["IV", "ii6", "ii6/5"]}
 # Chromatic approaches to the cadence: (label, needs the cadential 6/4 after it).
@@ -69,15 +80,42 @@ class ComposeError(ValueError):
 # ---------------------------------------------------------------- harmony
 
 def localize(label, mode):
-    """A major-key numeral as it reads in ``mode`` (minor: I -> i, ii6 -> ii°6, IV -> iv, ...)."""
-    return MINOR.get(label, label) if mode == "minor" else label
+    """A major-key numeral as it reads in ``mode`` (minor: I -> i, ii6 -> ii°6, IV6/4 -> iv6/4, V6/5/vi -> V6/5/VI)."""
+    if mode != "minor":
+        return label
+    head, _, target = label.rpartition("/")
+    if head and target.isalpha():  # an applied chord: V6/5/vi
+        return head + "/" + {"IV": "iv", "vi": "VI", "ii": "ii°", "iii": "III"}.get(target, target)
+    if label in MINOR:
+        return MINOR[label]
+    if label.endswith("6/4") and label[:-3] in MINOR:
+        return MINOR[label[:-3]] + "6/4"
+    return label
+
+
+def valid(label, key):
+    try:
+        chord_info(label, key)
+        return True
+    except ComposeError:
+        return False
 
 
 @lru_cache(maxsize=None)
 def chord_info(label, key):
     """The chord a numeral names in a key: names (root, third, fifth[, seventh]), bass, size, inversion, kind."""
     key = as_key(key)
+    if label == "ct°7":
+        if key.mode != "major":
+            raise ComposeError("The common-tone diminished seventh is used here in major keys.")
+        from .harmony import degree_pitch, name_of
+        names = (name_of(*degree_pitch(2, key.fifths, "major", 1)), name_of(*degree_pitch(4, key.fifths, "major", 1)),
+                 name_of(*degree_pitch(6, key.fifths, "major")), name_of(*degree_pitch(1, key.fifths, "major")))
+        return {"degree": 1, "symbol": "ct°", "pitches": list(names), "size": 4, "kind": "common-tone",
+                "names": names, "bass": names[3], "inversion": 3, "label": label}
     for chord in vocabulary(key.fifths, key.mode):
+        if chord["kind"] == "ninth":
+            continue
         for inversion in range(len(chord["pitches"]) if chord["kind"] != "aug6" else 1):
             if label_for(chord, inversion) == label:
                 return {**chord, "names": tuple(chord["pitches"]), "bass": chord["pitches"][inversion],
@@ -102,7 +140,7 @@ def local_leading_tone(info):
     return info["names"][0] if info["symbol"].startswith("vii") else info["names"][1]
 
 
-def progression(bars, rng, mode="major", chromatic=False):
+def progression(bars, rng, mode="major", chromatic=False, key=None):
     """Roman numerals for 2*bars-1 half-note chords (the last one a whole note), plus unit spans."""
     events = 2 * bars - 1
     six_four = rng.random() < 0.6
@@ -115,11 +153,14 @@ def progression(bars, rng, mode="major", chromatic=False):
         approach = rng.choice(options)
     # The cadential 6/4 falls on a downbeat; otherwise the predominant does.
     middle = events - 1 - 1 - len(cadence) - 1  # opening I, predominant, cadence, final I
+    key = key or Key(0, mode)
+    units = [u for u in UNITS + (CHROMATIC_UNITS if chromatic else [])
+             if all(valid(localize(c, mode), key) for c in u[3])]
     for _ in range(200):
         chords, spans, current, left = ["I"], [], "I", middle
         last_unit, fixed = None, None  # fixed: soprano degree already required at the current chord
         while left > 0:
-            options = [u for u in UNITS if u[2] == current and len(u[3]) <= left
+            options = [u for u in units if u[2] == current and len(u[3]) <= left
                        and (last_unit is None or u[3] != last_unit[3])
                        and (fixed is None or u[4] is None or u[4][0] == fixed)]
             if not options:
@@ -127,7 +168,8 @@ def progression(bars, rng, mode="major", chromatic=False):
             if last_unit and last_unit[0] == "arp":
                 options = [u for u in options if u[0] != "arp"] or options
             # Favor the expansions the reviewer names (reference p. 12, figures 5, 8, 10, 12a, 12b).
-            weights = [0.35 if u[0] == "arp" else 2.0 if u[0] in ("5", "8", "10", "12a", "12b") else 1.0 for u in options]
+            weights = [0.35 if u[0] == "arp" else 2.0 if u[0] in ("5", "8", "10", "12a", "12b")
+                       else 0.6 if u[0] in ("p64", "n64") else 2.5 if u in CHROMATIC_UNITS else 1.0 for u in options]
             # Variety: an expansion already used in this phrase is much less likely to return.
             weights = [w * (0.08 if any(u[3] == used[3] and u[2] == used[2] for _, used in spans) else 1) for w, u in zip(weights, options)]
             unit = rng.choices(options, weights)[0]
@@ -156,8 +198,11 @@ def pitches_named(names, low, high, fifths=None):
 
 
 @lru_cache(maxsize=None)
-def voicings(label, key, final=False, unison=False):
-    """Complete, well-spaced voicings; ``unison`` lets the alto and tenor share a note."""
+def voicings(label, key, final=False, unison=False, fifth=False):
+    """Complete, well-spaced voicings; ``unison`` lets the alto and tenor share a note.
+
+    ``fifth`` also allows a root-position triad with its fifth doubled (around a
+    common-tone diminished seventh, whose neighbors return to the fifth)."""
     key = as_key(key)
     info = chord_info(label, key)
     names, bass_name, size, inversion = list(info["names"]), info["bass"], info["size"], info["inversion"]
@@ -191,7 +236,7 @@ def voicings(label, key, final=False, unison=False):
                         if info["kind"] == "aug6":
                             if doubled != names[1]:
                                 continue  # the Italian sixth doubles the tonic
-                        elif inversion == 0 and doubled != root:
+                        elif inversion == 0 and doubled != root and not (fifth and doubled == names[2]):
                             continue
                         elif inversion == 2 and doubled != bass_name:
                             continue
@@ -269,6 +314,8 @@ def transition(old, new, old_label, new_label, key, frustrated=False, fixed=None
                     return None
             if info["kind"] == "neapolitan" and o.name == info["names"][0] and n.midi > o.midi:
                 return None
+            if info["kind"] == "altered" and o.name == info["names"][2] and not half_up:
+                return None  # an augmented fifth continues up
     # No cross relation: a letter that changes accidental does so within one voice.
     for i, o in enumerate(old):
         for j, n in enumerate(new):
@@ -290,6 +337,12 @@ def transition(old, new, old_label, new_label, key, frustrated=False, fixed=None
         return None  # direct fifth/octave in the outer voices with a soprano leap
     if old_label in ("I6/4", "i6/4") and new[3] != old[3]:
         return None  # the cadential 6/4 keeps its bass
+    if (old_label in ("IV6/4", "iv6/4") or new_label in ("IV6/4", "iv6/4")) and new[3] != old[3]:
+        return None  # the pedal 6/4 holds its bass
+    if (old_label == "V6/4" or new_label == "V6/4") and not (0 < abs(new[3].midi - old[3].midi) <= 2):
+        return None  # the passing 6/4 moves its bass by step
+    if info["kind"] == "common-tone" and any(abs(new[i].midi - old[i].midi) > 2 for i in range(4) if i != fixed):
+        return None  # the common-tone diminished seventh returns by step
     return cost
 
 
@@ -297,7 +350,8 @@ def voice(chords, key, soprano, rng, width=48, cadence=True):
     """Beam search over voicings. ``soprano`` maps event index to allowed soprano degrees."""
     options = []
     for i, label in enumerate(chords):
-        vs = voicings(label, key, final=cadence and i == len(chords) - 1)
+        near_ct = "ct°7" in chords[max(0, i - 1):i + 2]
+        vs = voicings(label, key, final=cadence and i == len(chords) - 1, fifth=near_ct and label in TONICS)
         if i in soprano:
             vs = [v for v in vs if degree_of(v[0], key) in soprano[i]]
         if not vs:
@@ -393,12 +447,14 @@ def to_musicxml(path_voicings, chords, fifths, title, mode="major"):
 
 # ---------------------------------------------------------------- entry point
 
-def compose_chorale(key="C", bars=4, seed=None, attempts=40, chromatic=False):
+def compose_chorale(key="C", bars=4, seed=None, attempts=40, chromatic=False, picardy=False):
     """Return (musicxml, review, plan) for an original chorale phrase.
 
     ``key`` is a name from KEYS ("C", "Bb", "Am", "F#m", ...). With ``chromatic``,
-    the cadence is approached by a chromatic chord: an applied dominant of V, the
-    Neapolitan, an augmented sixth, or (in major) a chord borrowed from minor.
+    the cadence is approached by a chromatic chord (an applied dominant of V, the
+    Neapolitan, an augmented sixth, or in major a chord borrowed from minor), and
+    the tonic may be expanded with tonicizations or a common-tone diminished
+    seventh. ``picardy`` ends a minor-key phrase on a major tonic.
     ``review`` is ``coach.review.run_review``'s result on the exported score, so the
     composition is checked exactly as an uploaded exercise would be.
     """
@@ -411,7 +467,9 @@ def compose_chorale(key="C", bars=4, seed=None, attempts=40, chromatic=False):
     rng = random.Random(seed)
     best = None
     for _ in range(attempts):
-        chords, spans = progression(bars, rng, k.mode, chromatic)
+        chords, spans = progression(bars, rng, k.mode, chromatic, k)
+        if picardy and k.mode == "minor":
+            chords[-1] = "I"  # the Picardy third: a major tonic to end a minor-key phrase
         soprano = {}
         for start, unit in spans:
             if unit[4]:

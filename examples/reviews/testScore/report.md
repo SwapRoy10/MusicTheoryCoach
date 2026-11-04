@@ -84,10 +84,14 @@ Other passages were not confidently named from the supplied paradigms. Matching 
 
 17. ERROR - m. 8, beat 3: S and A are more than an octave apart.
 
-18. ERROR - m. 9, beat 1: S and A are more than an octave apart.
+18. SUGGESTION - m. 9, beat 1: I6/4 is not a cadential, passing, pedal or arpeggiated 6/4. Second-inversion triads are normally one of these; check the bass line around it.
 
-19. SUGGESTION - m. 10, beat 1: Interpreted as V6/5: A (the fifth) is absent. An omitted fifth can be legitimate; this is a contextual interpretation.
+19. ERROR - m. 9, beat 1: S and A are more than an octave apart.
 
-20. SUGGESTION - m. 11, beat 3: The leading tone is doubled; review tendency-tone resolution in these voices.
+20. SUGGESTION - m. 10, beat 1: Interpreted as V6/5: A (the fifth) is absent. An omitted fifth can be legitimate; this is a contextual interpretation.
 
-21. SUGGESTION - m. 12, beat 1: The leading tone does not rise a semitone; check harmonic context and inner-voice exceptions.
+21. SUGGESTION - m. 11, beat 3: The leading tone is doubled; review tendency-tone resolution in these voices.
+
+22. SUGGESTION - m. 11, beat 3: vii°6/4 is not a cadential, passing, pedal or arpeggiated 6/4. Second-inversion triads are normally one of these; check the bass line around it.
+
+23. SUGGESTION - m. 12, beat 1: The leading tone does not rise a semitone; check harmonic context and inner-voice exceptions.

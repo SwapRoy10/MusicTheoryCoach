@@ -33,9 +33,13 @@ def _figures(figures):
 def canonical_label(text):
     """Normalize a written numeral: V65 -> V6/5, V7/V, viio7/V, N6, Ger+6 (or Ger65), bVI, It6."""
     text = text.strip().replace("º", "°").replace("♭", "b").replace("♯", "#").replace(" ", "")
-    six = re.fullmatch(r"(It|Fr|Ger)(\+?6|\+?4/?3|\+?6/?5)?", text)
+    six = re.fullmatch(r"(It|Fr|Ger|Sw)(\+?6|\+?4/?3|\+?6/?5)?", text)
     if six:
-        return six.group(1) + "+6"
+        return ("Ger" if six.group(1) == "Sw" else six.group(1)) + "+6"
+    if re.fullmatch(r"(?i)ct[o°]7", text):
+        return "ct°7"
+    if re.fullmatch(r"V9", text):
+        return "V9"
     match = re.fullmatch(r"(b?)([iIvV]+|N)([o°ø0+]?)([0-9/]{0,4})(?:/(b?)([iIvV]+)([o°]?))?", text)
     if not match:
         return None
@@ -58,7 +62,7 @@ def review_harmony(score, supplied):
         if chord["status"] == "uncertain" and len(frame) == 4:
             names = {n.pitch.name for n in frame.values()}
             candidates = [c for c in vocabulary(score.fifths, score.mode)
-                          if c["size"] == 4 and c["kind"] != "aug6" and set(c["pitches"]) - {c["pitches"][2]} == names]
+                          if c["size"] == 4 and c["kind"] not in ("aug6", "altered") and set(c["pitches"]) - {c["pitches"][2]} == names]
             if len(candidates) == 1:
                 candidate = candidates[0]
                 bass = min(frame.values(), key=lambda n: n.pitch.midi).pitch.name
@@ -74,7 +78,54 @@ def review_harmony(score, supplied):
                        "anchor": frame["B"].id, "original_label": original,
                        "label_matches": canonical_label(original) == chord["roman"] if original else None,
                        "notes": {v: n.data() for v, n in frame.items()}})
+    contextual_labels(events)
+    for event in events:  # written labels are compared after the contextual relabeling
+        if event["original_label"]:
+            event["label_matches"] = canonical_label(event["original_label"]) == event["roman"]
     return events
+
+
+SIX_FOUR = {
+    "cadential": "a cadential 6/4: it decorates the V that follows over the same bass",
+    "pedal": "a pedal (neighbor) 6/4: the bass holds while the upper voices move to neighbors and back",
+    "passing": "a passing 6/4: the bass passes by step between two positions of the same harmony",
+    "arpeggiated": "an arpeggiated 6/4: the bass leaps within one harmony",
+}
+
+
+def contextual_labels(events):
+    """Labels that depend on the neighbors: the kinds of 6/4 chord, and the common-tone diminished seventh."""
+    def bass(e):
+        return e["notes"]["B"]["midi"] if "B" in e["notes"] else None
+    for i, e in enumerate(events):
+        prev = events[i - 1] if i else None
+        nxt = events[i + 1] if i + 1 < len(events) else None
+        if e.get("status") == "identified" and e.get("size") == 3 and e.get("inversion") == 2 and e.get("kind") != "aug6":
+            kind = None
+            if e.get("degree") == 1 and nxt and nxt.get("roman") in ("V", "V7") and bass(nxt) == bass(e):
+                kind = "cadential"
+            elif prev and nxt and bass(prev) == bass(e) == bass(nxt) and prev.get("pitches") == nxt.get("pitches"):
+                kind = "pedal"
+            elif prev and nxt and bass(prev) is not None and bass(nxt) is not None and \
+                    0 < abs(bass(e) - bass(prev)) <= 2 and 0 < abs(bass(nxt) - bass(e)) <= 2 and \
+                    (bass(e) - bass(prev)) * (bass(nxt) - bass(e)) > 0:
+                kind = "passing"
+            elif prev and prev.get("pitches") == e.get("pitches"):
+                kind = "arpeggiated"
+            e["six_four"] = kind
+            if kind:
+                e["reason"] = f"{e['reason']} In context this is {SIX_FOUR[kind]}."
+        # A fully diminished seventh between two statements of one chord, sharing a held note with it.
+        dim7 = e.get("status") == "identified" and e.get("size") == 4 and e.get("symbol", "").endswith("°")
+        if dim7 and prev and nxt and prev.get("pitches") == nxt.get("pitches") and prev.get("status") == "identified":
+            held = [v for v in e["notes"] if v in prev["notes"] and v in nxt["notes"]
+                    and prev["notes"][v]["midi"] == e["notes"][v]["midi"] == nxt["notes"][v]["midi"]]
+            target = e.get("target")
+            resolves_to_target = target and nxt.get("symbol") == target
+            if held and not resolves_to_target:
+                e.update(roman="ct°7", kind="common-tone", common_tone=e["notes"][held[0]]["pitch"],
+                         reason=f"A common-tone diminished seventh: it embellishes {prev['roman']}, holding "
+                                f"{e['notes'][held[0]]['pitch']} while the other voices move by step and return.")
 
 
 def degree(pitch, fifths, mode="major"):
@@ -177,6 +228,17 @@ def run_review(score_path, out):
     assignment = constraints_for(score, {"instructions": "Review the full score. Voices assigned bottom-up by pitch. Original numerals are labels to audit, not required harmony."})
     harmony = review_harmony(score, supplied)
     findings = check(score, assignment, enforce_length=False)
+    # Resolution advice does not apply to a common-tone diminished seventh, which returns to the chord it embellishes.
+    after_ct = {(harmony[i + 1]["measure"], harmony[i + 1]["beat"]) for i, c in enumerate(harmony[:-1]) if c.get("kind") == "common-tone"}
+    findings = [f for f in findings if not (f["rule"] in ("applied_resolution", "seventh_resolution", "leading_tone")
+                                            and (f["measure"], f["beat"]) in after_ct)]
+    for c in harmony:
+        if c.get("status") == "identified" and c.get("size") == 3 and c.get("inversion") == 2 \
+                and c.get("kind") != "aug6" and "six_four" in c and not c["six_four"]:
+            findings.append({"rule": "six_four", "severity": "suggestion", "measure": c["measure"], "beat": c["beat"],
+                             "voices": ["B"], "notes": [c["notes"]["B"]],
+                             "message": f"{c['roman']} is not a cadential, passing, pedal or arpeggiated 6/4. Second-inversion "
+                                        "triads are normally one of these; check the bass line around it."})
     contextual = {(c["measure"], c["beat"]) for c in harmony if c["status"] == "interpreted"}
     findings = [f for f in findings if not (f["rule"] == "harmony_uncertain" and (f["measure"],f["beat"]) in contextual)]
     by_id = {n.id: n for n in score.notes}

@@ -223,14 +223,99 @@ export class PracticeEditor {
 
   answers() {
     const out = {};
-    for (const v of this.ex.voices) if (!v.given) out[v.id] = v.events.map((e) => e.pitch);
+    for (const v of this.ex.voices) {
+      if (v.given) continue;
+      out[v.id] = this.ex.rhythmEditable ? structuredClone(v.events) : v.events.map((e) => e.pitch);
+    }
     return out;
   }
 
   fill(answers) {
-    for (const [id, pitches] of Object.entries(answers)) {
+    for (const [id, values] of Object.entries(answers)) {
       const v = this.voice(id);
-      pitches.forEach((p, i) => { if (!v.events[i].rest) v.events[i].pitch = p; });
+      if (values.length && typeof values[0] === "object" && values[0] !== null) {
+        v.events = structuredClone(values);
+      } else {
+        values.forEach((p, i) => { if (v.events[i] && !v.events[i].rest) v.events[i].pitch = p; });
+      }
     }
+    this.selected = this.firstEmpty() || this.editable()[0] || null;
+  }
+
+  solution() {
+    return this.ex.rhythmEditable && this.ex.solutionEvents ? this.ex.solutionEvents : this.ex.solution;
+  }
+
+  // ----- rhythm (fifth species) -----
+
+  barSpan(voice, index) {
+    let t = 0;
+    for (let i = 0; i < index; i++) t += voice.events[i].dur;
+    const bar = Math.floor(t / 4 + 1e-9);
+    return { start: t, barStart: bar * 4, barEnd: bar * 4 + 4 };
+  }
+
+  /** Set the selected note's duration in quarters; the rest of its bar is refilled with empty notes. */
+  duration(quarters) {
+    if (!this.ex.rhythmEditable || !this.selected) return;
+    const v = this.voice(this.selected.voice);
+    const i = this.selected.index;
+    const e = v.events[i];
+    const { start, barEnd } = this.barSpan(v, i);
+    if (e.rest || (i === v.events.length - 1)) return; // the opening rest and the final whole note stay
+    const length = Math.min(quarters, barEnd - start);
+    // Remove the events this note now covers in its bar, then fill the remaining time.
+    let j = i + 1, t = start + e.dur;
+    while (j < v.events.length && t < start + length - 1e-9 && t < barEnd - 1e-9) {
+      t += v.events[j].dur;
+      j++;
+    }
+    const tail = Math.max(0, Math.min(t, barEnd) - (start + length));
+    const removed = v.events.splice(i + 1, j - i - 1);
+    const tiedOut = e.tieTo || removed.some((r) => r.tieTo);
+    e.dur = length;
+    e.tieTo = tiedOut && start + length >= barEnd - 1e-9; // ties only cross bar lines here
+    const fill = [];
+    let left = tail;
+    for (const d of [4, 3, 2, 1.5, 1, 0.5]) while (left >= d - 1e-9) { fill.push({ dur: d, pitch: null }); left -= d; }
+    v.events.splice(i + 1, 0, ...fill);
+    this.fixTies(v);
+  }
+
+  dot() {
+    const e = this.event();
+    if (!e || !this.ex.rhythmEditable) return;
+    const base = { 3: 2, 1.5: 1 }[e.dur];
+    this.duration(base ? base : e.dur * 1.5);
+  }
+
+  /** Tie the selected note into the next one (across the bar line), or remove the tie. */
+  tie() {
+    if (!this.ex.rhythmEditable || !this.selected) return;
+    const v = this.voice(this.selected.voice);
+    let i = this.selected.index;
+    while (v.events[i].tieTo && i + 1 < v.events.length) i++;
+    const e = v.events[i], next = v.events[i + 1];
+    if (!next || next.rest) return;
+    if (this.barSpan(v, i).start + e.dur < this.barSpan(v, i).barEnd - 1e-9) return; // ties cross the bar line
+    if (e.tieTo) {
+      e.tieTo = false;
+      next.tieFrom = false;
+    } else {
+      e.tieTo = true;
+      next.tieFrom = true;
+      next.pitch = e.pitch;
+    }
+    this.fixTies(v);
+  }
+
+  fixTies(v) {
+    v.events.forEach((e, k) => {
+      const next = v.events[k + 1];
+      if (e.tieTo && (!next || next.rest)) e.tieTo = false;
+      if (next) next.tieFrom = Boolean(e.tieTo);
+      if (e.tieFrom && k > 0) e.pitch = v.events[k - 1].pitch;
+    });
+    if (v.events[0]) v.events[0].tieFrom = false;
   }
 }

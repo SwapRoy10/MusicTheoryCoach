@@ -1,6 +1,6 @@
 // Small, dependency-free helpers for music labels and MusicXML preparation.
 
-const FIGURES = /^(6\/4|6\/5|4\/3|4\/2|6|7)?$/;
+const FIGURES = /^(6\/4|6\/5|4\/3|4\/2|6|7|9)?$/;
 
 function figuresHTML(figures) {
   if (!figures) return "";
@@ -25,6 +25,7 @@ function numeralHTML(text) {
 export function romanHTML(label) {
   const six = /^(It|Fr|Ger)\+6$/.exec(label || "");
   if (six) return `<span class="rn-base">${six[1]}</span><span class="rn-single">+6</span>`;
+  if (label === "ct°7") return `<span class="rn-base rn-small">ct</span><span class="rn-quality">°</span><span class="rn-single">7</span>`;
   const [chord, target] = String(label || "").split(/\/(?=b?[ivIV]+[°]?$)/);
   const head = numeralHTML(chord);
   if (!head) return escapeHTML(label || "?");
@@ -58,6 +59,9 @@ const RULES = {
   applied_resolution: "Applied chord resolution",
   augmented_sixth: "Augmented sixth resolution",
   neapolitan: "Neapolitan",
+  six_four: "6/4 chord",
+  ninth_resolution: "Ninth chord resolution",
+  augmented_fifth: "Augmented fifth",
   measure_count: "Length",
   measure_duration: "Measure duration",
 };

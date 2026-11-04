@@ -30,6 +30,16 @@ def species_exercise(species=1, mode="dorian", above=True, seed=None):
             event["rest"] = True
         counterpoint.append(event)
     solution = [str(e.pitch) if e.pitch else None for e in exercise.counterpoint]
+    solution_events = [{"dur": float(e.dur), "pitch": str(e.pitch) if e.pitch else None, "tieFrom": bool(e.tie_from),
+                        "tieTo": bool(e.tie_to), **({"rest": True} if e.pitch is None else {})} for e in exercise.counterpoint]
+    rhythm = species == 5
+    if rhythm:
+        # Fifth species: the student writes the rhythm too. Start from half notes after the opening rest.
+        bars = exercise.bars
+        counterpoint = [{"dur": 2.0, "pitch": None, "rest": True}, {"dur": 2.0, "pitch": None}]
+        for _ in range(1, bars - 1):
+            counterpoint += [{"dur": 2.0, "pitch": None}, {"dur": 2.0, "pitch": None}]
+        counterpoint.append({"dur": 4.0, "pitch": None})
     cp_pitches = [e.pitch for e in exercise.counterpoint if e.pitch]
     cf_pitches = [e.pitch for e in exercise.cantus]
     cp = {"id": "CP", "name": "Counterpoint", "given": False, "clef": _clef(cp_pitches), "events": counterpoint,
@@ -42,9 +52,13 @@ def species_exercise(species=1, mode="dorian", above=True, seed=None):
         "keyName": f"{exercise.final.name} {mode.capitalize()}",
         "title": f"{ORDINAL[species]} species {side} the cantus",
         "layout": "parts", "voices": [cp, cf] if above else [cf, cp],
-        "solution": {"CP": solution},
+        "solution": {"CP": solution}, "rhythmEditable": rhythm, "template": {"CP": [dict(e) for e in counterpoint]},
+        **({"solutionEvents": {"CP": solution_events}} if rhythm else {}),
         "prompt": (f"Write a {ORDINAL[species].lower()}-species counterpoint {side} this cantus firmus in "
-                   f"{exercise.final.name} {mode}. The rhythm is given; choose the pitches."),
+                   f"{exercise.final.name} {mode}. "
+                   + ("Choose the rhythm as well as the pitches: number keys set durations (3 eighth, 4 quarter, "
+                      "5 half, 6 whole, . dot) and T ties into the next note." if rhythm
+                      else "The rhythm is given; choose the pitches.")),
     }
 
 

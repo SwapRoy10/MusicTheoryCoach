@@ -2291,7 +2291,8 @@
           "pitch": "D5",
           "midi": 74
         }
-      }
+      },
+      "six_four": null
     },
     {
       "degree": 1,
@@ -2598,7 +2599,8 @@
           "pitch": "A4",
           "midi": 69
         }
-      }
+      },
+      "six_four": null
     },
     {
       "degree": 3,
@@ -3451,6 +3453,27 @@
       "message": "S and A are more than an octave apart."
     },
     {
+      "rule": "six_four",
+      "severity": "suggestion",
+      "measure": "9",
+      "beat": "1",
+      "voices": [
+        "B"
+      ],
+      "notes": [
+        {
+          "id": "n79",
+          "voice": "B",
+          "measure": "9",
+          "beat": "1",
+          "duration": "2",
+          "pitch": "D3",
+          "midi": 50
+        }
+      ],
+      "message": "I6/4 is not a cadential, passing, pedal or arpeggiated 6/4. Second-inversion triads are normally one of these; check the bass line around it."
+    },
+    {
       "rule": "spacing",
       "severity": "error",
       "measure": "9",
@@ -3562,6 +3585,27 @@
         }
       ],
       "message": "The leading tone is doubled; review tendency-tone resolution in these voices."
+    },
+    {
+      "rule": "six_four",
+      "severity": "suggestion",
+      "measure": "11",
+      "beat": "3",
+      "voices": [
+        "B"
+      ],
+      "notes": [
+        {
+          "id": "n89",
+          "voice": "B",
+          "measure": "11",
+          "beat": "3",
+          "duration": "2",
+          "pitch": "C3",
+          "midi": 48
+        }
+      ],
+      "message": "vii\u00b06/4 is not a cadential, passing, pedal or arpeggiated 6/4. Second-inversion triads are normally one of these; check the bass line around it."
     },
     {
       "rule": "leading_tone",
@@ -4673,7 +4717,8 @@
             "pitch": "D5",
             "midi": 74
           }
-        }
+        },
+        "six_four": null
       },
       {
         "degree": 1,
@@ -4980,7 +5025,8 @@
             "pitch": "A4",
             "midi": 69
           }
-        }
+        },
+        "six_four": null
       },
       {
         "degree": 3,

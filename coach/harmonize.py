@@ -38,18 +38,24 @@ def chord_labels(key):
                 continue  # (the minor-mode Picardy third is added for the final chord only)
         if kind == "diatonic" and symbol in ("v", "VII") and key.mode == "minor":
             continue
+        if kind in ("ninth", "altered"):
+            if symbol == "V+" and size == 3:
+                labels.append("V+")  # the augmented dominant, resolving to I
+            continue
         if size == 4 and not (symbol in ("V", "viiø", "vii°", "ii", "iiø") or kind == "applied"):
             continue
         if kind == "applied" and size == 3 and not symbol.startswith("V"):
             continue
         for inversion in range(size):
-            if size == 3 and inversion == 2 and chord["degree"] != 1:
-                continue  # 6/4 chords: only the cadential 6/4
+            if size == 3 and inversion == 2 and not (chord["degree"] == 1 or (kind == "diatonic" and symbol in ("V", "IV", "iv"))):
+                continue  # 6/4 chords: cadential, passing (V6/4) and pedal (IV6/4) only
             if size == 3 and symbol.endswith("°") and inversion != 1:
                 continue  # diminished triads in first inversion
             if chord["degree"] == 1 and kind == "diatonic" and size == 4:
                 continue
             labels.append(label_for(chord, inversion))
+    if key.mode == "major":
+        labels.append("ct°7")
     return tuple(labels)
 
 
@@ -60,6 +66,10 @@ def function(label, key):
         return "APP"
     if kind in ("neapolitan", "aug6"):
         return "PD"
+    if kind == "common-tone":
+        return "CT"
+    if label in ("V6/4", "IV6/4", "iv6/4"):
+        return "64"  # passing and pedal 6/4 chords embellish the tonic
     if degree == 1:
         return "CAD" if info["inversion"] == 2 else "T"
     if symbol in ("vi", "VI", "iii", "III", "bVI"):
@@ -70,7 +80,7 @@ def function(label, key):
 
 
 # Where each dominant may go (the user's framework: V4/2 resolves to I6).
-RESOLVES = {"V": {"I", "I6", "TS", "V7", "V6/5", "V4/3", "V4/2"}, "V6": {"I", "V6/5"}, "V7": {"I", "TS"},
+RESOLVES = {"V+": {"I"}, "V": {"I", "I6", "TS", "V7", "V6/5", "V4/3", "V4/2", "V+"}, "V6": {"I", "V6/5"}, "V7": {"I", "TS"},
             "V6/5": {"I"}, "V4/3": {"I", "I6"}, "V4/2": {"I6"}, "vii°6": {"I", "I6"}, "vii°7": {"I"},
             "vii°6/5": {"I", "I6"}, "vii°4/3": {"I6"}, "viiø7": {"I"}, "viiø6/5": {"I", "I6"}, "viiø4/3": {"I6"}}
 
@@ -86,6 +96,10 @@ def allowed(old, new, key):
     info_old, info_new = chord_info(old, key), chord_info(new, key)
     if fo == "CAD":
         return new in ("V", "V7")
+    if fo in ("CT", "64"):
+        return fn == "T"  # the embellishing chord returns to (or passes on to) the tonic
+    if fn in ("CT", "64"):
+        return fo == "T"
     if fo == "APP":
         target_root = _target_root(info_old, key)
         if fn == "APP":  # V/x may gain its seventh: V/V -> V6/5/V
@@ -122,7 +136,14 @@ def _target_root(info, key):
 
 @lru_cache(maxsize=None)
 def _voicings(label, key, final):
-    return voicings(label, key, final=final, unison=True)
+    return voicings(label, key, final=final, unison=True, fifth=label in ("I", "i") and not final)
+
+
+def _doubled_fifth(label, v, key):
+    if label not in ("I", "i"):
+        return False
+    names = chord_info(label, key)["names"]
+    return sum(p.name == names[2] for p in v) == 2
 
 
 def harmony_cost(index, label, total, key, chromatic=False):
@@ -137,6 +158,8 @@ def harmony_cost(index, label, total, key, chromatic=False):
         cost += 0.3 if chromatic else 4.5
     if fn == "TS" or label in ("V6",):
         cost += 1.0
+    if fn in ("64", "CT") or label == "V+":
+        cost += 1.2 if fn == "64" else (0.3 if chromatic else 4.5)
     if info["degree"] == 3 or label in ("vi6", "VI6", "ii4/3", "ii4/2", "iiø4/3", "iiø4/2", "ii7"):
         cost += 1.5  # less common choices
     if info["kind"] == "applied":
@@ -148,7 +171,7 @@ def harmony_cost(index, label, total, key, chromatic=False):
     return cost
 
 
-def harmonize(given, voice="S", key="C", seed=None, attempts=12, width=60, chromatic=False):
+def harmonize(given, voice="S", key="C", seed=None, attempts=12, width=60, chromatic=False, picardy=False):
     """Return (musicxml, review, plan) for a four-part setting of ``given`` (a list of Pitch).
 
     ``voice`` is "S" (a melody to harmonize) or "B" (a bass to realize). ``key`` is a
@@ -179,6 +202,8 @@ def harmonize(given, voice="S", key="C", seed=None, attempts=12, width=60, chrom
     total = len(given)
     labels = chord_labels(k)
     finals = ["i", "I"] if k.mode == "minor" else ["I"]  # a Picardy third is possible in minor
+    if picardy and k.mode == "minor":
+        finals = ["I"]
 
     # Candidate chords for each note.
     options = []
@@ -194,7 +219,7 @@ def harmonize(given, voice="S", key="C", seed=None, attempts=12, width=60, chrom
                 continue
             found.append(label)
         if not found:
-            where = "last" if i == total - 1 else "next-to-last" if i == total - 2 else f"note {i + 1}"
+            where = "last" if i == total - 1 else "next-to-last" if i == total - 2 else "first" if i == 0 else f"{i + 1}th"
             need = {total - 1: "the tonic", total - 2: "a note of V (sol, ti or re; fa for V7)",
                     0: "a note of the tonic chord"}.get(i, f"a note of a chord in {key_name(key)}")
             raise ComposeError(f"The {where} note ({p}) cannot be harmonized: it must be {need}.")
@@ -277,11 +302,22 @@ def _search(given, options, slot, key, rng, width, total=None, chromatic=False):
                 c = transition(old, v, old_label, label, key, cadence(i), slot)
                 if c is None:
                     continue
+                # Passing 6/4: tonic, bass step, other tonic position continuing in the same direction.
+                # Pedal 6/4 and ct°7: the same tonic chord before and after.
+                if function(old_label, key) in ("CT", "64") and len(path) >= 2:
+                    before_label, before = path[-2]
+                    if old_label == "V6/4":
+                        if label == before_label or (v[3].midi - old[3].midi) * (old[3].midi - before[3].midi) <= 0:
+                            continue
+                    elif label != before_label or v[3] != before[3]:
+                        continue
                 # A soprano that is free to move recovers its leaps by step the other way.
                 if free == 0 and len(path) >= 2:
                     a, b2 = path[-2][1][0].midi, old[0].midi
                     if abs(b2 - a) > 4 and not (0 < abs(v[0].midi - b2) <= 2 and (v[0].midi - b2) * (b2 - a) < 0):
                         c += 8
+                if _doubled_fifth(label, v, key) and function(old_label, key) != "CT":
+                    c += 2.5  # a doubled fifth is for the return from a common-tone diminished seventh
                 total_cost = cost + c + hcost + rng.random() * 3
                 if choice is None or total_cost < choice[0]:
                     choice = (total_cost, path)

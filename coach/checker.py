@@ -192,7 +192,7 @@ def check(score, assignment, enforce_length=True):
 def chromatic_tendencies(old_chord, new_chord, old, new, time, add):
     """Advice on how chromatic chords resolve. Suggestions only: context can justify other motion."""
     kind = old_chord.get("kind")
-    if old_chord.get("status") != "identified" or kind not in ("applied", "aug6", "neapolitan"):
+    if old_chord.get("status") != "identified" or kind not in ("applied", "aug6", "neapolitan", "ninth", "altered"):
         return
     if old_chord.get("pitches") == new_chord.get("pitches"):
         return
@@ -215,6 +215,18 @@ def chromatic_tendencies(old_chord, new_chord, old, new, time, add):
                 add("augmented_sixth", [a, b], f"In the {label}, the lowered sixth {a.pitch} should fall a half step to the dominant.", "suggestion", time)
             if a.pitch.name == sharp4 and b.pitch != a.pitch and b.pitch.midi - a.pitch.midi != 1:
                 add("augmented_sixth", [a, b], f"In the {label}, the raised fourth {a.pitch} should rise a half step to the dominant.", "suggestion", time)
+    elif kind == "ninth":
+        seventh, ninth = old_chord["pitches"][3], old_chord["pitches"][4]
+        for v, (a, b) in moves.items():
+            falls = a.pitch.diatonic - b.pitch.diatonic == 1 and a.pitch.midi - b.pitch.midi in (1, 2)
+            if a.pitch.name in (seventh, ninth) and b.pitch != a.pitch and not falls:
+                part = "seventh" if a.pitch.name == seventh else "ninth"
+                add("ninth_resolution", [a, b], f"The {part} of V9 ({a.pitch}) normally resolves down by step.", "suggestion", time)
+    elif kind == "altered":
+        raised = old_chord["pitches"][2]
+        for v, (a, b) in moves.items():
+            if a.pitch.name == raised and b.pitch != a.pitch and not (b.pitch.midi - a.pitch.midi == 1 and b.pitch.diatonic - a.pitch.diatonic == 1):
+                add("augmented_fifth", [a, b], f"In {label}, the raised fifth {a.pitch} should continue up by half step.", "suggestion", time)
     elif kind == "neapolitan":
         flat2 = old_chord["pitches"][0]
         for v, (a, b) in moves.items():
