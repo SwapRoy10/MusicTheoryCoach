@@ -62,29 +62,44 @@ def species_exercise(species=1, mode="dorian", above=True, seed=None):
     }
 
 
-def chorale_exercise(key="C", bars=4, given="S", chromatic=False, seed=None):
+def chorale_exercise(key="C", bars=4, given="S", chromatic=False, seed=None, nonchord=False):
+    """Given a melody or bass, write the other voices. With ``nonchord``, the student also chooses the
+    rhythm, so passing tones, neighbors and suspensions can be written (the given line may have them too)."""
     if given not in ("S", "B"):
         raise ValueError("The given voice must be the soprano or the bass.")
-    _, reviewed, plan = compose_chorale(key, bars, seed=seed, chromatic=chromatic)
+    _, reviewed, plan = compose_chorale(key, bars, seed=seed, chromatic=chromatic, embellished=nonchord)
     score = reviewed["score"]
     voices = []
-    solution = {}
+    solution, solution_events, template = {}, {}, {}
+    slots = [2.0] * (2 * bars - 2) + [4.0]  # one chord per half note, then a whole note
     for v, name, clef in (("S", "Soprano", "G"), ("A", "Alto", "G"), ("T", "Tenor", "F"), ("B", "Bass", "F")):
         notes = sorted((n for n in score.notes if n.voice == v), key=lambda n: n.start)
         is_given = v == given
-        voices.append({"id": v, "name": name, "given": is_given, "clef": clef, "center": CENTER[v],
-                       "events": [{"dur": float(n.duration), "pitch": str(n.pitch) if is_given else None,
-                                   "given": is_given} for n in notes]})
+        events = [{"dur": float(n.duration), "pitch": str(n.pitch), "tieFrom": n.tied,
+                   "tieTo": i + 1 < len(notes) and notes[i + 1].tied} for i, n in enumerate(notes)]
+        if is_given:
+            shown = [dict(e, given=True) for e in events]
+        elif nonchord:
+            shown = [{"dur": d, "pitch": None} for d in slots]
+            template[v] = [dict(e) for e in shown]
+            solution_events[v] = events
+        else:
+            shown = [{"dur": e["dur"], "pitch": None} for e in events]
+        voices.append({"id": v, "name": name, "given": is_given, "clef": clef, "center": CENTER[v], "events": shown})
         if not is_given:
-            solution[v] = [str(n.pitch) for n in notes]
+            solution[v] = [e["pitch"] for e in events]
     k = KEYS[key]
     line = {"S": "melody", "B": "bass line"}[given]
+    rhythm = ("Choose the rhythm too, to add passing tones, neighbors and suspensions: number keys set durations "
+              "(3 eighth, 4 quarter, 5 half, 6 whole, . dot) and T ties into the next note."
+              if nonchord else "One chord per half note.")
     return {
         "kind": "chorale", "fifths": k.fifths, "mode": k.mode, "keyName": key_name(key), "key": key,
         "title": f"Chorale in {key_name(key)}: given {line}",
         "layout": "grand", "voices": voices, "solution": solution, "chords": plan["chords"],
-        "prompt": (f"Write the other three voices for this {line} in {key_name(key)}: one chord per half note, "
-                   "ending with an authentic cadence."),
+        "rhythmEditable": nonchord, **({"solutionEvents": solution_events, "template": template} if nonchord else {}),
+        "prompt": (f"Write the other three voices for this {line} in {key_name(key)}, ending with an authentic cadence. "
+                   + rhythm),
     }
 
 
@@ -97,4 +112,4 @@ def new_exercise(options):
             raise ValueError(f"Mode must be one of {', '.join(MODES)}.")
         return species_exercise(int(options.get("species", 1)), mode, bool(options.get("above", True)), seed)
     return chorale_exercise(options.get("key", "C"), int(options.get("bars", 4)), options.get("given", "S"),
-                            bool(options.get("chromatic")), seed)
+                            bool(options.get("chromatic")), seed, bool(options.get("nonchord")))

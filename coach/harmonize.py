@@ -171,7 +171,7 @@ def harmony_cost(index, label, total, key, chromatic=False):
     return cost
 
 
-def harmonize(given, voice="S", key="C", seed=None, attempts=12, width=60, chromatic=False, picardy=False):
+def harmonize(given, voice="S", key="C", seed=None, attempts=12, width=60, chromatic=False, picardy=False, embellished=False):
     """Return (musicxml, review, plan) for a four-part setting of ``given`` (a list of Pitch).
 
     ``voice`` is "S" (a melody to harmonize) or "B" (a bass to realize). ``key`` is a
@@ -245,13 +245,20 @@ def harmonize(given, voice="S", key="C", seed=None, attempts=12, width=60, chrom
         plan = {"key": key, "key_name": key_name(key), "mode": k.mode, "bars": (total + 1) // 2,
                 "chords": chords, "given": voice}
         if best is None or len(findings) < best[0]:
-            best = (len(findings), xml, review, plan)
+            best = (len(findings), xml, review, plan, path)
         if not findings:
             break
     if best is None:
         raise ComposeError("No setting of this line passed every rule. Leaps between chord tones that no chord "
                            "connects, or a line that stays on one note, are the usual causes.")
-    return best[1], best[2], best[3]
+    _, xml, review, plan, path = best
+    if embellished:
+        from .compose_chorale import embellished_musicxml
+        result = embellished_musicxml([v for _, v in path], plan["chords"], k, f"Harmonization in {key_name(key)}", rng, fixed=slot)
+        if result:
+            xml, review = result
+            plan["embellished"] = True
+    return xml, review, plan
 
 
 def Pitch_name(midi):

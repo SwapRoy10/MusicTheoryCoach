@@ -53,8 +53,15 @@ def chord_at(assignment, time):
     return next((c for c in reversed(assignment["harmony"]) if c["offset"] <= time), None)
 
 
-def check(score, assignment, enforce_length=True):
+def check(score, assignment, enforce_length=True, strict_rhythm=True, slices=None):
+    """Voice-leading findings. ``strict_rhythm`` enforces the half-note assignment format;
+    without it, quarter notes, ties and nonchord tones are analyzed (``slices`` may be
+    passed in from coach.nct.analyze so the review and the checker agree)."""
     findings = []
+    from . import nct
+    free = not score.homophonic
+    if free and slices is None:
+        slices = nct.analyze(score)
 
     def add(rule, notes, message, severity="error", time=None, measure=None):
         notes = list(notes)
@@ -86,15 +93,21 @@ def check(score, assignment, enforce_length=True):
     key_name = f"{vocabulary(score.fifths, mode)[0]['pitches'][0]} {mode}"
     # Notes of recognized chromatic chords (and the raised sixth and seventh of minor) belong to the key's vocabulary.
     chromatic_ok = set()
-    for _, frame in score.frames():
-        chord = identify(frame, score.fifths, mode)
-        if chord["status"] == "identified":
-            chromatic_ok |= {n.id for n in frame.values()}
+    if free:
+        for sl in slices:
+            if sl["chord"]["status"] in ("identified", "interpreted"):
+                chromatic_ok |= {n.id for n in sl["frame"].values()}
+            chromatic_ok |= {info["note"].id for info in sl["ncts"].values()}
+    else:
+        for _, frame in score.frames():
+            chord = identify(frame, score.fifths, mode)
+            if chord["status"] == "identified":
+                chromatic_ok |= {n.id for n in frame.values()}
     raised = set()
     if mode == "minor":
         raised = {Pitch(*degree_pitch(d, score.fifths, mode, 1), 4).name for d in (6, 7)}
     for n in score.notes:
-        if n.duration not in (2, 4) or n.beat not in (1, 3) or n.beat + n.duration > 5:
+        if strict_rhythm and (n.duration not in (2, 4) or n.beat not in (1, 3) or n.beat + n.duration > 5):
             add("rhythm", [n], "Use half notes on beats 1/3 or a whole note on beat 1.")
         low, high = RANGES[n.voice]
         if not low <= n.pitch.midi <= high:
@@ -113,7 +126,7 @@ def check(score, assignment, enforce_length=True):
                 add("spacing", [u, l], f"{upper} and {lower} are more than an octave apart.", time=time)
         chord = chord_at(assignment, time)
         actual = identify(frame, score.fifths, mode)
-        if actual["status"] == "uncertain":
+        if actual["status"] == "uncertain" and not free:
             add("harmony_uncertain", frame.values(), actual["reason"], "uncertain", time)
         if chord:
             for n in frame.values():
@@ -129,12 +142,20 @@ def check(score, assignment, enforce_length=True):
             if len(chord["pitches"]) == 3 and len(frame) == 4 and chord["bass"] == chord["pitches"][0]:
                 if sum(n.pitch.name == chord["bass"] for n in frame.values()) != 2:
                     add("doubling", frame.values(), "Root-position triads usually double the root; review the melodic context.", "suggestion", time)
-    for (old_time, old), (time, new) in zip(frames, frames[1:]):
-        old_chord, new_chord = identify(old, score.fifths, mode), identify(new, score.fifths, mode)
+    if free:
+        nonchord_checks(score, slices, add)
+        lines = nct.lines_of(score)
+        groups = nct.harmony_events(slices)
+        harmonic_pairs = [(nct.structural(a["slices"][0], lines), a["slices"][0]["chord"], b["time"],
+                           nct.structural(b["slices"][0], lines), b["slices"][0]["chord"]) for a, b in zip(groups, groups[1:])]
+    else:
+        harmonic_pairs = [(old, identify(old, score.fifths, mode), time, new, identify(new, score.fifths, mode))
+                          for (_, old), (time, new) in zip(frames, frames[1:])]
+    for old, old_chord, time, new, new_chord in harmonic_pairs:
         chromatic_tendencies(old_chord, new_chord, old, new, time, add)
         if old_chord.get("size") == 4 and old_chord.get("kind") != "aug6" and old_chord.get("pitches") != new_chord.get("pitches"):
             for voice, note in old.items():
-                if note.pitch.name == old_chord["pitches"][3] and voice in new and note.end >= time:
+                if note.pitch.name == old_chord["pitches"][3] and voice in new and (free or note.end >= time):
                     target = new[voice]
                     if target.pitch == note.pitch:
                         continue  # Retention needs later harmonic context.
@@ -143,6 +164,7 @@ def check(score, assignment, enforce_length=True):
                         continue  # Parallel 10ths (reference p. 12, fig. 10): the soprano seventh rises with the bass.
                     if not (note.pitch.diatonic - target.pitch.diatonic == 1 and note.pitch.midi - target.pitch.midi in (1, 2)):
                         add("seventh_resolution", [note, target], "The identified chordal seventh does not descend by step; review the harmonic context.", "suggestion", time)
+    for (old_time, old), (time, new) in zip(frames, frames[1:]):
         # Do not connect notes across a gap in either voice.
         for a, b in combinations(VOICES, 2):
             if not all(v in old and v in new and old[v].end >= time for v in (a, b)):
@@ -187,6 +209,38 @@ def check(score, assignment, enforce_length=True):
                 or final["B"].pitch.midi % 12 != tonic_pc):
             add("tonic_ending", final.values(), "The assignment requires a complete root-position tonic ending.", time=frames[-1][0])
     return findings
+
+
+def nonchord_checks(score, slices, add):
+    """Sonorities that nonchord tones cannot explain, and how suspensions are prepared and resolved."""
+    from .nct import _neighbors, lines_of
+    lines = lines_of(score)
+    for index, sl in enumerate(slices):
+        frame, time = sl["frame"], sl["time"]
+        if sl["chord"]["status"] not in ("identified", "interpreted") and len(frame) == 4:
+            attacked = [n for n in frame.values() if n.start == time] or list(frame.values())
+            add("nonchord_tone", attacked,
+                "This sonority is not a chord, and the notes that do not fit it are not passing tones, neighbors, "
+                "suspensions, appoggiaturas, escape tones or anticipations. Check the approach and departure of each moving voice.",
+                "error", time)
+            continue
+        for voice, info in sl["ncts"].items():
+            note = info["note"]
+            if info["type"] in ("S", "RET"):
+                prev, nxt = _neighbors(lines[voice], note)
+                before = slices[index - 1]["chord"] if index else None
+                prepared = prev is not None and prev.pitch == note.pitch or note.start < time
+                if before and before.get("status") == "identified" and note.pitch.name not in before["pitches"]:
+                    prepared = False
+                if not prepared:
+                    add("suspension_preparation", [note], f"The {info['name']} {note.pitch} is not prepared: it should be "
+                        "sounded as a chord tone in the previous chord, then held or repeated.", "error", time)
+                if nxt is not None and info.get("figure") != "9-8":
+                    others = [n for v, n in frame.items() if v != voice and n.pitch.name == nxt.pitch.name and n.start <= time]
+                    if others and voice != "B":
+                        add("suspension_doubling", [note] + others, f"The note of resolution ({nxt.pitch.name}) already sounds "
+                            f"against the {info.get('figure') or ''} suspension in another voice; usually only the bass may double it (9-8).",
+                            "suggestion", time)
 
 
 def chromatic_tendencies(old_chord, new_chord, old, new, time, add):

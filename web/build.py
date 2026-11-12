@@ -32,6 +32,7 @@ EXAMPLES = [
     ("First species (Fux)", ROOT / "examples/species/first-species-fux.musicxml"),
     ("Second species with mistakes", ROOT / "examples/species/second-species-errors.musicxml"),
     ("Melody to harmonize", ROOT / "examples/harmonize/melody-in-g.musicxml"),
+    ("Chorale with nonchord tones", ROOT / "examples/nonchord/chorale-with-nonchord-tones.musicxml"),
 ]
 
 

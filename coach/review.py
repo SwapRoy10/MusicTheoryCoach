@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from .score_import import read_ranked, root_from_file
 from .checker import check, constraints_for
 from .harmony import identify, label_for, tonic_pc as key_tonic_pc, tonic_step, vocabulary
+from .nct import analyze as nct_analyze, harmony_events, lines_of, structural
 from .model import VOICES
 from .reference import library
 from .report import save_json
@@ -54,35 +55,62 @@ def canonical_label(text):
     return label
 
 
-def review_harmony(score, supplied):
+def interpret_incomplete(frame, score):
+    """A seventh chord with its fifth omitted, when exactly one reading fits."""
+    if len(frame) != 4:
+        return None
+    names = {n.pitch.name for n in frame.values()}
+    candidates = [c for c in vocabulary(score.fifths, score.mode)
+                  if c["size"] == 4 and c["kind"] not in ("aug6", "altered") and set(c["pitches"]) - {c["pitches"][2]} == names]
+    if len(candidates) != 1:
+        return None
+    candidate = candidates[0]
+    bass = min(frame.values(), key=lambda n: n.pitch.midi).pitch.name
+    inv = candidate["pitches"].index(bass)
+    return {**candidate, "roman": label_for(candidate, inv), "status": "interpreted", "bass": bass, "inversion": inv,
+            "reason": "Root, third and seventh are present; fifth is omitted. Contextual interpretation.",
+            "omitted": candidate["pitches"][2], "sounding_pitches": sorted(names)}
+
+
+def harmonic_slices(score):
+    return nct_analyze(score, fallback=lambda frame: interpret_incomplete(frame, score))
+
+
+def review_harmony(score, supplied, slices=None):
     labels = {(r["measure"], r["beat"]): r["text"] for r in supplied if canonical_label(r["text"])}
+    slices = slices if slices is not None else harmonic_slices(score)
+    lines = lines_of(score)
     events = []
-    for time, frame in score.frames():
-        chord = identify(frame, score.fifths, score.mode)
-        if chord["status"] == "uncertain" and len(frame) == 4:
-            names = {n.pitch.name for n in frame.values()}
-            candidates = [c for c in vocabulary(score.fifths, score.mode)
-                          if c["size"] == 4 and c["kind"] not in ("aug6", "altered") and set(c["pitches"]) - {c["pitches"][2]} == names]
-            if len(candidates) == 1:
-                candidate = candidates[0]
-                bass = min(frame.values(), key=lambda n: n.pitch.midi).pitch.name
-                inv = candidate["pitches"].index(bass)
-                chord = {**candidate, "roman": label_for(candidate, inv),
-                         "status": "interpreted", "bass": bass, "inversion": inv,
-                         "reason": "Root, third and seventh are present; fifth is omitted. Contextual interpretation.",
-                         "omitted": candidate["pitches"][2], "sounding_pitches": sorted(names)}
+    for group in harmony_events(slices):
+        first = group["slices"][0]
+        time, frame, chord = group["time"], first["frame"], first["chord"]
         mi = int(time // 4)
         measure, beat = score.measures[mi], str(time % 4 + 1)
         original = labels.get((measure, beat))
+        attacked = [n for n in frame.values() if n.start == time and not n.tied]
+        anchor = frame["B"] if "B" in frame and frame["B"].start == time else min(attacked or frame.values(), key=lambda n: n.pitch.midi)
+        chord_tones = structural(first, lines)
         events.append({**chord, "measure": measure, "beat": beat, "offset": str(time),
-                       "anchor": frame["B"].id, "original_label": original,
+                       "anchor": anchor.id, "original_label": original,
                        "label_matches": canonical_label(original) == chord["roman"] if original else None,
-                       "notes": {v: n.data() for v, n in frame.items()}})
+                       "notes": {v: n.data() for v, n in frame.items()},
+                       "structure": {v: str(n.pitch) for v, n in chord_tones.items()},
+                       "nonchord_tones": [_nct_data(s, v, info) for s in group["slices"] for v, info in s["ncts"].items()]})
     contextual_labels(events)
     for event in events:  # written labels are compared after the contextual relabeling
         if event["original_label"]:
             event["label_matches"] = canonical_label(event["original_label"]) == event["roman"]
     return events
+
+
+def _nct_data(slice_, voice, info):
+    note = info["note"]
+    label = info["type"] if info["type"] != "S" else "S"
+    if info.get("figure"):
+        label = f"{info['type'] if info['type'] != 'S' else ''}{' ' if info['type'] != 'S' else ''}{info['figure']}".strip()
+    return {"id": note.id, "voice": voice, "type": info["type"], "name": info["name"], "label": label,
+            "figure": info.get("figure"), "measure": note.measure, "beat": str(slice_["time"] % 4 + 1),
+            "pitch": str(note.pitch)}
 
 
 SIX_FOUR = {
@@ -96,6 +124,9 @@ SIX_FOUR = {
 def contextual_labels(events):
     """Labels that depend on the neighbors: the kinds of 6/4 chord, and the common-tone diminished seventh."""
     def bass(e):
+        if e.get("structure", {}).get("B"):
+            from .model import Pitch
+            return Pitch.parse(e["structure"]["B"]).midi
         return e["notes"]["B"]["midi"] if "B" in e["notes"] else None
     for i, e in enumerate(events):
         prev = events[i - 1] if i else None
@@ -155,13 +186,14 @@ def paradigms(score, harmony):
     """Narrow recognition of source schemes, with actual bass/soprano checks."""
     specs = PARADIGM_SPECS
     patterns = library()["patterns"]
-    frames = list(score.frames())
+    from .model import Pitch
     matches = []
     for index in range(len(harmony)-2):
         window = harmony[index:index+3]
-        frame_window = [f for _, f in frames[index:index+3]]
-        bass = [degree(f["B"].pitch, score.fifths, score.mode) for f in frame_window]
-        soprano = [degree(f["S"].pitch, score.fifths, score.mode) for f in frame_window]
+        if any("S" not in c.get("structure", c["notes"]) or "B" not in c.get("structure", c["notes"]) for c in window):
+            continue
+        bass = [degree(Pitch.parse(c["structure"]["B"]), score.fifths, score.mode) for c in window]
+        soprano = [degree(Pitch.parse(c["structure"]["S"]), score.fifths, score.mode) for c in window]
         romans = [c["roman"] for c in window]
         for name, expected, expected_bass, expected_soprano in specs:
             expected = in_mode(expected, score.mode)
@@ -183,7 +215,7 @@ def paradigms(score, harmony):
                             "name": name, "status": "variant" if variant else "scheme_match", "description": description,
                             "source_pdf_page": source["pdf_page"], "source_printed_page": source["printed_page"],
                             "source_figure": source["figure"], "source_pattern_id": source["id"],
-                            "anchor": frame_window[0]["S"].id})
+                            "anchor": window[0]["notes"]["S"]["id"]})
     return matches
 
 
@@ -201,10 +233,16 @@ def paradigm_marks(score, matches):
     for p in matches:
         name = p.get("name") or names[p["source_pattern_id"]]
         p["name"] = name
-        start = by_location[(p["start"]["measure"],p["start"]["beat"])]
-        end = by_location[(p["end"]["measure"],p["end"]["beat"])]
+        start = by_location.get((p["start"]["measure"], p["start"]["beat"])) or _sounding(score, p["start"])
+        end = by_location.get((p["end"]["measure"], p["end"]["beat"])) or _sounding(score, p["end"])
         marks.append({"anchor": start.id, "end_anchor": end.id, "label": display_names.get(name,name), "name": name})
     return marks
+
+
+def _sounding(score, where):
+    """The soprano note sounding at a (measure, beat) location."""
+    time = score.measures.index(where["measure"]) * 4 + Fraction(where["beat"]) - 1
+    return next(n for n in score.notes if n.voice == "S" and n.start <= time < n.end)
 
 
 def run_review(score_path, out):
@@ -226,8 +264,9 @@ def run_review(score_path, out):
     ET.ElementTree(root).write(source, encoding="utf-8", xml_declaration=True)
     score, supplied, _ = read_ranked(source)
     assignment = constraints_for(score, {"instructions": "Review the full score. Voices assigned bottom-up by pitch. Original numerals are labels to audit, not required harmony."})
-    harmony = review_harmony(score, supplied)
-    findings = check(score, assignment, enforce_length=False)
+    slices = harmonic_slices(score)
+    harmony = review_harmony(score, supplied, slices)
+    findings = check(score, assignment, enforce_length=False, strict_rhythm=False, slices=slices)
     # Resolution advice does not apply to a common-tone diminished seventh, which returns to the chord it embellishes.
     after_ct = {(harmony[i + 1]["measure"], harmony[i + 1]["beat"]) for i, c in enumerate(harmony[:-1]) if c.get("kind") == "common-tone"}
     findings = [f for f in findings if not (f["rule"] in ("applied_resolution", "seventh_resolution", "leading_tone")
@@ -325,8 +364,8 @@ def run_review(score_path, out):
             from .model import Pitch
             replacement = Pitch.parse(dominant_root + str(alto.pitch.octave))
             candidate = score.change(alto.id,replacement)
-            before_errors = {(f["rule"],f["measure"],f["beat"],tuple(f["voices"])) for f in check(score,assignment,enforce_length=False) if f["severity"] == "error"}
-            after_errors = {(f["rule"],f["measure"],f["beat"],tuple(f["voices"])) for f in check(candidate,assignment,enforce_length=False) if f["severity"] == "error"}
+            before_errors = {(f["rule"],f["measure"],f["beat"],tuple(f["voices"])) for f in check(score,assignment,enforce_length=False,strict_rhythm=False) if f["severity"] == "error"}
+            after_errors = {(f["rule"],f["measure"],f["beat"],tuple(f["voices"])) for f in check(candidate,assignment,enforce_length=False,strict_rhythm=False) if f["severity"] == "error"}
             if not after_errors-before_errors:
                 proposal = f"Local option at m. {chord['measure']}, beat {chord['beat']}: change alto {alto.pitch} to {replacement} if V4/3 and the source passing-bass paradigm were intended. This restores V4/3 and removes {len(before_errors-after_errors)} supported voice-leading error(s), with no newly detected hard-rule errors in a full recheck. Other score issues remain; this is not a certified full revision."
                 local_proposals.append(proposal)
@@ -336,9 +375,15 @@ def run_review(score_path, out):
               "correction_notes": local_proposals, "paradigm_notes": paradigm_notes, "marks": marks}
     result = {"input_sha256": hashlib.sha256(score_path.read_bytes()).hexdigest(), "scope": scope,
               "score": score.data(), "supplied_labels": supplied, "harmony": harmony, "findings": findings,
-              "paradigms": matches, "local_proposals": local_proposals, "review": review}
+              "paradigms": matches, "local_proposals": local_proposals, "review": review,
+              "nonchord_tones": [n for c in harmony for n in c.get("nonchord_tones", [])]}
+    nct_notes = [f"m. {n['measure']}, beat {n['beat']}, {n['voice']} {n['pitch']}: {n['name']}"
+                 + (f" ({n['figure']})" if n.get("figure") else "") for n in result["nonchord_tones"]]
     report = ["# Score review", "", "## Roman numerals", "", *label_notes, *local_proposals,
-              "", "## Paradigms", "", *paradigm_notes, "", "## Findings", ""]
+              "", "## Paradigms", "", *paradigm_notes, ""]
+    if nct_notes:
+        report += ["## Nonchord tones", "", *nct_notes, ""]
+    report += ["## Findings", ""]
     report += [f"{i}. {f['severity'].upper()} - m. {f['measure']}, beat {f['beat']} - {f['rule']}: {f['message']} Evidence: "
                + "; ".join(f"{n['voice']} {n['pitch']} (m. {n['measure']}, b. {n['beat']})" for n in f["notes"])
                for i,f in enumerate(findings,1)]

@@ -60,6 +60,19 @@ export function drawOverlay(container, analysis, findingNumbers) {
     layer.append(el);
   }
 
+  // Nonchord tones: a small label beside each one (above the soprano and alto, below the tenor and bass).
+  for (const nct of analysis.nonchord_tones || []) {
+    const head = headBox(nct.id);
+    if (!head) continue;
+    const el = document.createElement("span");
+    el.className = `nct nct-${nct.voice}`;
+    el.textContent = nct.label;
+    el.title = `${nct.name}${nct.figure ? ` (${nct.figure})` : ""}: ${nct.voice} ${nct.pitch}, m. ${nct.measure}, beat ${nct.beat}`;
+    el.style.left = `${head.cx}px`;
+    el.style.top = nct.voice === "S" || nct.voice === "T" ? `${head.top - 15}px` : `${head.bottom + 2}px`;
+    layer.append(el);
+  }
+
   // Finding numbers, in a row just above each system. Badges for the same spot
   // sit side by side; runs that would collide are nudged right.
   const placed = [];

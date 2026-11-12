@@ -7,6 +7,7 @@ A beam search voices the chords under the same rules the chorale checker
 enforces; every candidate is then reviewed by ``coach.review.run_review`` on its
 exported MusicXML, and only phrases with no errors are returned.
 """
+from fractions import Fraction
 from functools import lru_cache
 from pathlib import Path
 import random
@@ -447,14 +448,15 @@ def to_musicxml(path_voicings, chords, fifths, title, mode="major"):
 
 # ---------------------------------------------------------------- entry point
 
-def compose_chorale(key="C", bars=4, seed=None, attempts=40, chromatic=False, picardy=False):
+def compose_chorale(key="C", bars=4, seed=None, attempts=40, chromatic=False, picardy=False, embellished=False):
     """Return (musicxml, review, plan) for an original chorale phrase.
 
     ``key`` is a name from KEYS ("C", "Bb", "Am", "F#m", ...). With ``chromatic``,
     the cadence is approached by a chromatic chord (an applied dominant of V, the
     Neapolitan, an augmented sixth, or in major a chord borrowed from minor), and
     the tonic may be expanded with tonicizations or a common-tone diminished
-    seventh. ``picardy`` ends a minor-key phrase on a major tonic.
+    seventh. ``picardy`` ends a minor-key phrase on a major tonic. ``embellished``
+    adds passing and neighbor tones in quarter notes (checked again by the reviewer).
     ``review`` is ``coach.review.run_review``'s result on the exported score, so the
     composition is checked exactly as an uploaded exercise would be.
     """
@@ -500,9 +502,181 @@ def compose_chorale(key="C", bars=4, seed=None, attempts=40, chromatic=False, pi
                 "expansions": [{"figure": u[0], "name": u[1], "chords": [chords[s]] + [localize(c, k.mode) for c in u[3]], "start": s}
                                for s, u in spans if u[0] != "arp"]}
         if best is None or score < best[0]:
-            best = (score, xml, review, plan)
+            best = (score, xml, review, plan, path)
         if score == 0:
             break
     if best is None:
         raise ComposeError("No phrase passed every rule this time; try again.")
-    return best[1], best[2], best[3]
+    _, xml, review, plan, path = best
+    if embellished:
+        result = embellished_musicxml(path, plan["chords"], k, f"Chorale in {key_name(key)}", rng)
+        if result:
+            xml, review = result
+            plan["embellished"] = True
+    return xml, review, plan
+
+
+NOTE_TYPES = {Fraction(4): ("whole", 0), Fraction(3): ("half", 1), Fraction(2): ("half", 0), Fraction(3, 2): ("quarter", 1),
+              Fraction(1): ("quarter", 0), Fraction(1, 2): ("eighth", 0)}
+
+
+def voices_to_musicxml(voices, fifths, title, mode="major"):
+    """Grand-staff MusicXML from independent voice lines.
+
+    ``voices`` maps S, A, T, B to lists of (duration in quarters, Pitch, tie_to_next).
+    Notes may not cross a bar line; tie across it instead.
+    """
+    root = ET.Element("score-partwise", version="4.0")
+    ET.SubElement(ET.SubElement(root, "work"), "work-title").text = title
+    sp = ET.SubElement(ET.SubElement(root, "part-list"), "score-part", id="P1")
+    ET.SubElement(sp, "part-name").text = "Chorale"
+    part = ET.SubElement(root, "part", id="P1")
+    bars = {}
+    for v, events in voices.items():
+        t, previous_tie = Fraction(0), False
+        for dur, pitch, tie in events:
+            dur = Fraction(dur)
+            bar = int(t // 4)
+            if (t % 4) + dur > 4:
+                raise ValueError("A note crosses the bar line; split and tie it")
+            bars.setdefault(bar, {}).setdefault(v, []).append((dur, pitch, tie, previous_tie))
+            previous_tie = tie
+            t += dur
+    count = max(bars) + 1
+    for b in range(count):
+        m = ET.SubElement(part, "measure", number=str(b + 1))
+        if b == 0:
+            attr = ET.SubElement(m, "attributes")
+            ET.SubElement(attr, "divisions").text = "2"
+            key = ET.SubElement(attr, "key")
+            ET.SubElement(key, "fifths").text = str(fifths)
+            ET.SubElement(key, "mode").text = mode
+            time = ET.SubElement(attr, "time")
+            ET.SubElement(time, "beats").text = "4"
+            ET.SubElement(time, "beat-type").text = "4"
+            ET.SubElement(attr, "staves").text = "2"
+            for number, sign, line in ((1, "G", 2), (2, "F", 4)):
+                clef = ET.SubElement(attr, "clef", number=str(number))
+                ET.SubElement(clef, "sign").text = sign
+                ET.SubElement(clef, "line").text = str(line)
+        for vi, (v, staff, stem) in enumerate((("S", 1, "up"), ("A", 1, "down"), ("T", 2, "up"), ("B", 2, "down"))):
+            if vi:
+                ET.SubElement(ET.SubElement(m, "backup"), "duration").text = "8"
+            for dur, p, tie, tied in bars.get(b, {}).get(v, []):
+                n = ET.SubElement(m, "note")
+                pitch = ET.SubElement(n, "pitch")
+                ET.SubElement(pitch, "step").text = p.step
+                if p.alter:
+                    ET.SubElement(pitch, "alter").text = str(p.alter)
+                ET.SubElement(pitch, "octave").text = str(p.octave)
+                ET.SubElement(n, "duration").text = str(int(dur * 2))
+                if tied:
+                    ET.SubElement(n, "tie", type="stop")
+                if tie:
+                    ET.SubElement(n, "tie", type="start")
+                ET.SubElement(n, "voice").text = str(vi + 1)
+                kind, dots = NOTE_TYPES[dur]
+                ET.SubElement(n, "type").text = kind
+                for _ in range(dots):
+                    ET.SubElement(n, "dot")
+                if kind != "whole":
+                    ET.SubElement(n, "stem").text = stem
+                ET.SubElement(n, "staff").text = str(staff)
+                if tie or tied:
+                    notations = ET.SubElement(n, "notations")
+                    if tied:
+                        ET.SubElement(notations, "tied", type="stop")
+                    if tie:
+                        ET.SubElement(notations, "tied", type="start")
+        if b == count - 1:
+            ET.SubElement(ET.SubElement(m, "barline", location="right"), "bar-style").text = "light-heavy"
+    ET.indent(root)
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="unicode")
+
+
+def embellish(path, key, rng, fixed=None, rate=0.55):
+    """Turn block chords into voice lines with passing and neighbor tones.
+
+    A voice that moves a third between two chords may fill it with a passing tone;
+    a voice that holds a common tone may decorate it with a neighbor. Each
+    embellishment takes the second half of the first chord's half note. Returns
+    {voice: [(duration, Pitch, tie)]}; the caller checks the result.
+    """
+    key = as_key(key)
+    signature = scale(key.fifths)
+    voices = {v: [] for v in "SATB"}
+    last = len(path) - 1
+    suspended = {}  # voice -> the note held over into this chord
+    for i, chord in enumerate(path):
+        for vi, v in enumerate("SATB"):
+            pitch = chord[vi]
+            if v in suspended:
+                # The held note is struck by the tie; it resolves down by step halfway through the chord.
+                voices[v] += [(Fraction(1), suspended.pop(v), False), (Fraction(1), pitch, False)]
+                continue
+            if i == last:
+                voices[v].append((Fraction(2), pitch, False))
+                continue
+            nxt = path[i + 1][vi]
+            # A suspension: hold this note into the next chord when it falls by step to the next note.
+            if (vi != fixed and vi != 3 and i + 1 < last and rng.random() < 0.3 and not suspended
+                    and pitch.diatonic - nxt.diatonic == 1 and 1 <= pitch.midi - nxt.midi <= 2
+                    and pitch.name not in {p.name for p in path[i + 1]}):
+                voices[v].append((Fraction(2), pitch, True))
+                suspended[v] = pitch
+                continue
+            nxt = path[i + 1][vi]
+            middle = None
+            if vi != fixed and rng.random() < rate:
+                letters = nxt.diatonic - pitch.diatonic
+                if abs(letters) == 2:
+                    step = STEPS[(STEPS.index(pitch.step) + (1 if letters > 0 else -1)) % 7]
+                    octave = pitch.octave + (1 if pitch.step == "B" and letters > 0 else -1 if pitch.step == "C" and letters < 0 else 0)
+                    for alter in (signature[step], signature[step] + 1, signature[step] - 1):
+                        m = Pitch(step, alter, octave)
+                        if 1 <= abs(m.midi - pitch.midi) <= 2 and 1 <= abs(nxt.midi - m.midi) <= 2:
+                            middle = m
+                            break
+                elif letters == 0 and pitch == nxt and vi in (1, 2) and rng.random() < 0.5:
+                    direction = rng.choice((1, -1))
+                    step = STEPS[(STEPS.index(pitch.step) + direction) % 7]
+                    octave = pitch.octave + (1 if pitch.step == "B" and direction > 0 else -1 if pitch.step == "C" and direction < 0 else 0)
+                    m = Pitch(step, signature[step], octave)
+                    if 1 <= abs(m.midi - pitch.midi) <= 2:
+                        middle = m
+            if middle is not None and RANGES[v][0] <= middle.midi <= RANGES[v][1]:
+                voices[v] += [(Fraction(1), pitch, False), (Fraction(1), middle, False)]
+            else:
+                voices[v].append((Fraction(2), pitch, False))
+    # The final chord fills its bar.
+    for v in voices:
+        dur, pitch, tie = voices[v][-1]
+        voices[v][-1] = (Fraction(4) if len(path) % 2 else Fraction(2), pitch, tie)
+    return voices
+
+
+def embellished_musicxml(path, chords, key, title, rng, fixed=None, tries=8):
+    """An embellished version that the reviewer accepts (same chords, no errors), or None."""
+    from .review import run_review
+    key = as_key(key)
+    best = None
+    for _ in range(tries):
+        lines = embellish(path, key, rng, fixed)
+        if all(len(l) == len(path) for l in lines.values()):
+            continue  # nothing was added
+        xml = voices_to_musicxml(lines, key.fifths, title, key.mode)
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "embellished.musicxml"
+            source.write_text(xml, encoding="utf-8")
+            review = run_review(source, Path(tmp) / "out")
+        result = review["result"]
+        if any(f["severity"] == "error" for f in result["findings"]):
+            continue
+        if [c["roman"] for c in result["harmony"]] != list(chords):
+            continue
+        count = len(result["nonchord_tones"]) - 3 * len(result["findings"])
+        if best is None or count > best[0]:
+            best = (count, xml, review)
+        if count >= len(path) // 2:
+            break
+    return best[1:] if best else None

@@ -48,6 +48,7 @@ class Note:
     beat: Fraction
     duration: Fraction
     pitch: Pitch
+    tied: bool = False  # continues a tie from the previous note in this voice (not a new attack)
 
     @property
     def start(self):
@@ -58,9 +59,12 @@ class Note:
         return self.start + self.duration
 
     def data(self):
-        return {"id": self.id, "voice": self.voice, "measure": self.measure,
+        data = {"id": self.id, "voice": self.voice, "measure": self.measure,
                 "beat": str(self.beat), "duration": str(self.duration),
                 "pitch": str(self.pitch), "midi": self.pitch.midi}
+        if self.tied:
+            data["tied"] = True
+        return data
 
 
 @dataclass(frozen=True)
@@ -71,10 +75,20 @@ class Score:
     mode: str = "major"
 
     def frames(self, extra_times=()):
+        """(time, {voice: note}) at every onset and release."""
         for time in sorted({n.start for n in self.notes} | {n.end for n in self.notes} | set(extra_times)):
             sounding = {n.voice: n for n in self.notes if n.start <= time < n.end}
             if sounding:
                 yield time, sounding
+
+    @property
+    def homophonic(self):
+        """True when every voice attacks together in half and whole notes (the strict chorale format)."""
+        starts = {}
+        for n in self.notes:
+            starts.setdefault(n.start, set()).add((n.voice, n.duration))
+        return all(len(group) == 4 and len({d for _, d in group}) == 1 for group in starts.values()) and \
+            not any(n.tied for n in self.notes)
 
     def change(self, note_id, pitch):
         return replace(self, notes=tuple(replace(n, pitch=pitch) if n.id == note_id else n

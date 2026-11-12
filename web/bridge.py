@@ -165,7 +165,8 @@ def compose_chorale(options="{}"):
     options = json.loads(options or "{}")
     try:
         musicxml, reviewed, plan = compose(options.get("key", "C"), int(options.get("bars", 4)), options.get("seed"),
-                                           chromatic=bool(options.get("chromatic")), picardy=bool(options.get("picardy")))
+                                           chromatic=bool(options.get("chromatic")), picardy=bool(options.get("picardy")),
+                                           embellished=bool(options.get("embellished")))
     except ComposeError as exc:
         return json.dumps({"error": str(exc)})
     work = Path(tempfile.mkdtemp())
@@ -188,7 +189,8 @@ def harmonize(options="{}"):
         else:
             line = parse_line(options.get("text", ""))
         musicxml, reviewed, plan = run(line, options.get("voice", "S"), options.get("key", "C"), options.get("seed"),
-                                       chromatic=bool(options.get("chromatic")), picardy=bool(options.get("picardy")))
+                                       chromatic=bool(options.get("chromatic")), picardy=bool(options.get("picardy")),
+                                           embellished=bool(options.get("embellished")))
     except ComposeError as exc:
         return json.dumps({"error": str(exc), "kind": "line"})
     work = Path(tempfile.mkdtemp())

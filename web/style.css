@@ -322,3 +322,10 @@ p.fixes { margin: 0 8px 8px 36px !important; }
   filter: drop-shadow(0 0 2px #1f3a93) drop-shadow(0 0 5px #1f3a9366);
 }
 .rn-small { font-size: 0.85em; }
+
+/* ---------- nonchord tones ---------- */
+.overlay .nct {
+  position: absolute; transform: translateX(-50%); pointer-events: auto; cursor: help;
+  font: italic 600 10.5px/1 var(--sans); color: var(--match); background: #ffffffd9; padding: 1px 2px; border-radius: 3px;
+  white-space: nowrap;
+}

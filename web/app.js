@@ -17,8 +17,9 @@ const state = {
   analysis: null, report: "", musicxml: "", name: "", filter: "all", pinned: null,
   mode: "review", composeTab: "species",
   form: { species: "1", above: "true", source: "generate", mode: "dorian", cantus: "", key: "C", bars: "4",
-          line: "", given: "S", lineKey: "C", chromatic: false, lineChromatic: false, picardy: false, linePicardy: false },
-  practiceForm: { pkind: "species", pspecies: "1", pabove: "true", pmode: "dorian", pkey: "C", pbars: "4", pgiven: "S", pchromatic: false },
+          line: "", given: "S", lineKey: "C", chromatic: false, lineChromatic: false, picardy: false, linePicardy: false,
+          embellished: false, lineEmbellished: false },
+  practiceForm: { pkind: "species", pspecies: "1", pabove: "true", pmode: "dorian", pkey: "C", pbars: "4", pgiven: "S", pchromatic: false, pnonchord: false },
   practice: null,
 };
 
@@ -182,12 +183,12 @@ function compose() {
   const f = state.form;
   const seed = Math.floor(Math.random() * 2 ** 31);
   if (state.composeTab === "harmonize") {
-    const options = { text: f.line, voice: f.given, key: f.lineKey, seed, chromatic: f.lineChromatic, picardy: f.linePicardy };
+    const options = { text: f.line, voice: f.given, key: f.lineKey, seed, chromatic: f.lineChromatic, picardy: f.linePicardy, embellished: f.lineEmbellished };
     return run(`Harmonizing your ${f.given === "S" ? "melody" : "bass"}…`, (bridge) => bridge.harmonize(JSON.stringify(options)),
       `Harmonization in ${keyLabel(f.lineKey)}`);
   }
   if (state.composeTab === "chorale") {
-    const options = { key: f.key, bars: Number(f.bars), seed, chromatic: f.chromatic, picardy: f.picardy };
+    const options = { key: f.key, bars: Number(f.bars), seed, chromatic: f.chromatic, picardy: f.picardy, embellished: f.embellished };
     return run("Composing a chorale…", (bridge) => bridge.compose_chorale(JSON.stringify(options)),
       `Chorale in ${keyLabel(f.key)}`);
   }
@@ -213,9 +214,9 @@ function showError(name, message, kind) {
     : kind === "species"
       ? `Species exercises need two voices: a cantus firmus in whole notes (one per bar) and a counterpoint,
          in 4/4 or 2/2 with one key and no pickup measure. Ties are fine; tuplets and grace notes are not.`
-      : `The reviewer reads four-voice chorale exercises (one major key, 4/4 time, four notes sounding together
-         at each chord, no ties, dots, tuplets, grace notes or pickup measure) and two-voice species
-         counterpoint exercises. Export in concert pitch with repeats written out.`;
+      : `The reviewer reads four-voice chorales in 4/4 and one key (block chords, or two voices on each staff
+         with their own rhythms, ties and nonchord tones; no tuplets, grace notes or pickup measure) and two-voice
+         species counterpoint exercises. Export in concert pitch with repeats written out.`;
   panel.innerHTML = (state.mode === "compose" ? composeHTML() : "") + `
     <div class="problem">
       <h2>${escapeHTML(name)} ${state.mode === "compose" ? "could not be composed" : "could not be reviewed"}</h2>
@@ -332,6 +333,7 @@ function composeHTML() {
       </div>
       ${check("chromatic", f.chromatic, "Use chromatic harmony: tonicizations, a common-tone diminished seventh, and a chromatic chord before the cadence")}
       ${f.key.endsWith("m") ? check("picardy", f.picardy, "End with a Picardy third (a major final chord)") : ""}
+      ${check("embellished", f.embellished, "Add passing tones, neighbors and suspensions")}
       <p class="quiet">A new phrase each time: tonic expansions from the reference paradigms, a predominant and an
         authentic cadence, voiced in SATB and then reviewed by the chorale checker.</p>`;
   const example = f.given === "S" ? "E5 F5 G5 F5 | E5 D5 C5" : "C3 D3 E3 F3 | G3 G3 C3";
@@ -346,6 +348,7 @@ function composeHTML() {
         <select name="lineKey">${keyOptions(f.lineKey, option)}</select></label>
       ${check("lineChromatic", f.lineChromatic, "Use chromatic chords freely (otherwise only where the line needs them)")}
       ${f.lineKey.endsWith("m") ? check("linePicardy", f.linePicardy, "End with a Picardy third") : ""}
+      ${check("lineEmbellished", f.lineEmbellished, "Add passing tones, neighbors and suspensions in the other voices")}
       <p class="quiet">Half notes, one chord each, ending on a whole-note tonic; bar lines are optional. You can also open a
         MusicXML file with just one line. The other three voices are written and the whole chorale is checked.</p>`;
   const panes = { species, chorale, harmonize };
@@ -555,7 +558,9 @@ function choraleHTML(a) {
       </p>
       <p class="quiet">${a.scope.reviewed_measures} measures, ${a.harmony.length} chords reviewed.
         Blue numerals under each system are the reviewed analysis; red ones differ from what you wrote.
-        Voices are assigned from the lowest note up, so crossings can’t be detected.</p>
+        ${a.scope.voice_assignment?.startsWith("Voices read")
+          ? `Voices are read from the score's voice layers${(a.nonchord_tones || []).length ? "; green labels mark nonchord tones" : ""}.`
+          : "Voices are assigned from the lowest note up, so crossings can’t be detected."}</p>
       ${plan ? `<p class="composed">${plan.given ? `Your ${plan.given === "S" ? "melody" : "bass"} is kept as written; the other three voices were written here.`
         : "Composed here."} Checked by the same reviewer used for uploads.
         Chords: ${plan.chords.map((c) => `<span class="rn">${romanHTML(c)}</span>`).join(" ")}</p>` : ""}
@@ -584,6 +589,15 @@ function choraleHTML(a) {
       ${extraParadigmNotes.length ? `<ul class="notes">${extraParadigmNotes.map(noteItem).join("")}</ul>` : ""}
     </section>
 
+    ${(a.nonchord_tones || []).length ? `<section>
+      <h3>Nonchord tones</h3>
+      <ul class="paradigms">${a.nonchord_tones.map((n, i) => `
+        <li><button type="button" class="item" data-nct="${i}">
+          <span class="item-title">${escapeHTML(n.name[0].toUpperCase() + n.name.slice(1))}${n.figure ? ` ${escapeHTML(n.figure)}` : ""}</span>
+          <span class="where">m. ${n.measure}, beat ${n.beat}, ${VOICE_NAMES[n.voice] || n.voice} ${escapeHTML(n.pitch)}</span>
+        </button></li>`).join("")}</ul>
+    </section>` : ""}
+
     ${findingsHTML(a, "Voice leading", (f) => `m. ${f.measure}, beat ${f.beat}${f.voices.length < 4 ? ", " + f.voices.map((v) => VOICE_NAMES[v] || v).join(" and ") : ""}`)}`;
 }
 
@@ -607,6 +621,7 @@ function noteItem(text) {
 // ---------- linking score and panel ----------
 
 function notesFor(target) {
+  if (target.nct !== undefined) return [state.analysis.nonchord_tones[target.nct].id];
   const a = state.analysis;
   if (target.finding !== undefined) return a.findings[target.finding].notes.map((n) => n.id);
   if (target.paradigm !== undefined && a.kind === "species") {
@@ -661,6 +676,7 @@ function targetFrom(el) {
   if (el.dataset.finding !== undefined) return { finding: Number(el.dataset.finding) };
   if (el.dataset.paradigm !== undefined) return { paradigm: Number(el.dataset.paradigm) };
   if (el.dataset.chord) return { chord: el.dataset.chord };
+  if (el.dataset.nct !== undefined) return { nct: Number(el.dataset.nct) };
   return null;
 }
 
@@ -693,7 +709,7 @@ document.addEventListener("click", (event) => {
     if (state.pinned) highlight(state.pinned, false);
     return;
   }
-  const item = event.target.closest("[data-finding], [data-paradigm], [data-chord]");
+  const item = event.target.closest("[data-finding], [data-paradigm], [data-chord], [data-nct]");
   if (item) {
     const target = targetFrom(item);
     const same = JSON.stringify(target) === JSON.stringify(state.pinned);
@@ -755,7 +771,7 @@ async function newPractice() {
   const f = state.practiceForm;
   const options = f.pkind === "species"
     ? { kind: "species", species: Number(f.pspecies), above: f.pabove === "true", mode: f.pmode }
-    : { kind: "chorale", key: f.pkey, bars: Number(f.pbars), given: f.pgiven, chromatic: f.pchromatic };
+    : { kind: "chorale", key: f.pkey, bars: Number(f.pbars), given: f.pgiven, chromatic: f.pchromatic, nonchord: f.pnonchord };
   options.seed = Math.floor(Math.random() * 2 ** 31);
   setStatus("Writing a new exercise…");
   document.body.classList.add("busy");
@@ -967,7 +983,8 @@ function practiceHTML() {
       <div class="row">
         <label>Length <select name="pbars">${[4, 5, 6, 7, 8].map((n) => option(n, `${n} bars`, f.pbars)).join("")}</select></label>
       </div>
-      ${check("pchromatic", f.pchromatic, "Include a chromatic chord before the cadence")}`;
+      ${check("pchromatic", f.pchromatic, "Include a chromatic chord before the cadence")}
+      ${check("pnonchord", f.pnonchord, "Write nonchord tones (passing tones, neighbors, suspensions): choose your own rhythm")}`;
   const p = state.practice;
   const ex = p?.editor.ex;
   const sel = p?.editor.selected;
